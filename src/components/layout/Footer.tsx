@@ -10,7 +10,7 @@ const Footer: React.FC = () => {
       <div className="container-fluid py-8 md:py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="space-y-3">
-            <h3 className="text-lg font-medium">ชื่อ ชอบคุย</h3>
+            <h3 className="text-lg font-medium">ChopKhui</h3>
             <p className="text-sm text-muted-foreground">
               A modern application for connecting people through conversation.
             </p>
@@ -76,7 +76,7 @@ const Footer: React.FC = () => {
         </div>
         
         <div className="mt-8 pt-6 border-t text-center text-sm text-muted-foreground">
-          <p>&copy; {currentYear} ชื่อ ชอบคุย. All rights reserved.</p>
+          <p>&copy; {currentYear} ChopKhui. All rights reserved.</p>
         </div>
       </div>
     </footer>

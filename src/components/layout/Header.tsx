@@ -14,7 +14,7 @@ const Header: React.FC = () => {
         <div className="flex items-center gap-2">
           <Link to="/" className="flex items-center space-x-2">
             <span className="text-primary font-bold text-xl md:text-2xl">
-              ชื่อ ชอบคุย
+              ChopKhui
             </span>
           </Link>
         </div>

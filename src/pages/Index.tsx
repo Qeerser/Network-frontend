@@ -12,7 +12,7 @@ const Index: React.FC = () => {
         <div className="container-fluid text-center">
           <div className="max-w-3xl mx-auto space-y-6 animate-fade-in">
             <h1 className="font-bold tracking-tight">
-              Welcome to <span className="text-primary">ชื่อ ชอบคุย</span>
+              Welcome to <span className="text-primary">ChopKhui</span>
             </h1>
             <p className="text-xl text-muted-foreground">
               A beautiful and responsive application with seamless theme switching.
