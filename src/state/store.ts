@@ -1,6 +1,7 @@
 
 import { create } from 'zustand';
 import { io, Socket } from 'socket.io-client';
+import { v4 as uuidv4 } from 'uuid';
 
 // Define the message type
 export interface ChatMessage {
@@ -9,7 +10,13 @@ export interface ChatMessage {
   content: string;
   timestamp: number;
   isPrivate: boolean;
-  to?: string; // For private messages
+  to?: string; // For private messages or group name
+}
+
+// Define chat group type
+export interface ChatGroup {
+  name: string;
+  members: string[];
 }
 
 // Define our state interface
@@ -21,9 +28,15 @@ interface ChatState {
   // Connected clients
   connectedClients: string[];
   
+  // Chat groups
+  availableGroups: ChatGroup[];
+  createGroup: (name: string) => void;
+  joinGroup: (groupName: string) => void;
+  leaveGroup: (groupName: string) => void;
+  
   // Chat messages
   messages: ChatMessage[];
-  sendMessage: (content: string, to?: string) => void;
+  sendMessage: (content: string, to: string) => void;
   
   // Socket connection
   socket: Socket | null;
@@ -52,28 +65,99 @@ export const useChatStore = create<ChatState>((set, get) => ({
   // Connected clients state
   connectedClients: [],
   
+  // Chat groups state
+  availableGroups: [],
+  createGroup: (name: string) => {
+    const { socket, clientName, availableGroups } = get();
+    
+    // Check if group already exists
+    if (availableGroups.some(group => group.name === name)) {
+      console.warn(`Group ${name} already exists`);
+      return;
+    }
+    
+    // Create locally first
+    set(state => ({
+      availableGroups: [
+        ...state.availableGroups,
+        { name, members: [clientName] }
+      ]
+    }));
+    
+    // Emit to server if connected
+    if (socket && socket.connected) {
+      socket.emit('createGroup', { name, creator: clientName });
+    }
+  },
+  
+  joinGroup: (groupName: string) => {
+    const { socket, clientName, availableGroups } = get();
+    
+    // Update local state
+    set(state => ({
+      availableGroups: state.availableGroups.map(group => 
+        group.name === groupName && !group.members.includes(clientName)
+          ? { ...group, members: [...group.members, clientName] }
+          : group
+      )
+    }));
+    
+    // Emit to server
+    if (socket && socket.connected) {
+      socket.emit('joinGroup', { groupName, client: clientName });
+    }
+  },
+  
+  leaveGroup: (groupName: string) => {
+    const { socket, clientName } = get();
+    
+    // Update local state
+    set(state => ({
+      availableGroups: state.availableGroups.map(group => 
+        group.name === groupName
+          ? { ...group, members: group.members.filter(m => m !== clientName) }
+          : group
+      )
+    }));
+    
+    // Emit to server
+    if (socket && socket.connected) {
+      socket.emit('leaveGroup', { groupName, client: clientName });
+    }
+  },
+  
   // Messages state
   messages: [],
-  sendMessage: (content: string, to?: string) => {
-    const { socket, clientName } = get();
+  sendMessage: (content: string, to: string) => {
+    const { socket, clientName, availableGroups } = get();
     
     if (!socket || !socket.connected) {
       console.error('Cannot send message: Socket not connected');
       return;
     }
     
+    // Check if sending to a group or private
+    const isGroup = availableGroups.some(group => group.name === to);
+    
     const messageData = {
+      id: uuidv4(),
       content,
       from: clientName,
-      isPrivate: !!to,
-      to
+      isPrivate: !isGroup,
+      to,
+      timestamp: Date.now()
     };
     
+    // Add message to local state immediately for UI responsiveness
+    set(state => ({
+      messages: [...state.messages, messageData]
+    }));
+    
     // Send to server
-    if (to) {
-      socket.emit('privateMessage', messageData);
+    if (isGroup) {
+      socket.emit('groupMessage', messageData);
     } else {
-      socket.emit('message', messageData);
+      socket.emit('privateMessage', messageData);
     }
   },
   
@@ -114,7 +198,12 @@ export const useChatStore = create<ChatState>((set, get) => ({
       set({ connectedClients: clients });
     });
     
-    // Handle incoming messages
+    // Handle group list updates
+    socket.on('groups', (groups: ChatGroup[]) => {
+      set({ availableGroups: groups });
+    });
+    
+    // Handle incoming messages (both private and group)
     socket.on('messageReceived', (message: ChatMessage) => {
       set(state => ({ 
         messages: [...state.messages, message] 

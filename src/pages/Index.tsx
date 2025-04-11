@@ -4,6 +4,7 @@ import Layout from '../components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import ChatClients from '@/components/ChatClients';
+import ChatInterface from '@/components/ChatInterface';
 
 const Index: React.FC = () => {
   return (
@@ -16,7 +17,7 @@ const Index: React.FC = () => {
               Welcome to <span className="text-primary">ChopKhui</span>
             </h1>
             <p className="text-xl text-muted-foreground">
-              A beautiful and responsive application with seamless theme switching.
+              A beautiful and responsive chat application with seamless theme switching.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
               <Button size="lg">Get Started</Button>
@@ -36,8 +37,8 @@ const Index: React.FC = () => {
             </p>
           </div>
           
-          <div className="max-w-xl mx-auto">
-            <Card>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+            <Card className="lg:col-span-1">
               <CardHeader>
                 <CardTitle>Chat Client</CardTitle>
                 <CardDescription>
@@ -46,6 +47,18 @@ const Index: React.FC = () => {
               </CardHeader>
               <CardContent>
                 <ChatClients />
+              </CardContent>
+            </Card>
+            
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <CardTitle>Messages</CardTitle>
+                <CardDescription>
+                  Chat privately with users or join group conversations
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ChatInterface />
               </CardContent>
             </Card>
           </div>
@@ -65,28 +78,28 @@ const Index: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
               {
-                title: "Responsive Design",
-                description: "Looks great on any device, from mobile to desktop."
+                title: "Private Messaging",
+                description: "Exchange direct messages with other connected users."
+              },
+              {
+                title: "Group Chats",
+                description: "Create and join group conversations with multiple users."
               },
               {
                 title: "Theme Switching",
                 description: "Seamlessly switch between dark and light themes."
               },
               {
-                title: "Modern UI",
-                description: "Clean, intuitive interface with beautiful components."
+                title: "Real-time Updates",
+                description: "Messages and user status update instantly."
               },
               {
-                title: "Scalable Structure",
-                description: "Well-organized codebase ready for growth."
+                title: "Responsive Design",
+                description: "Works perfectly on mobile, tablet and desktop."
               },
               {
-                title: "Accessible",
-                description: "Built with accessibility in mind for all users."
-              },
-              {
-                title: "Performance Focused",
-                description: "Optimized for speed and smooth interactions."
+                title: "User-friendly Interface",
+                description: "Clean and intuitive UI for effortless communication."
               }
             ].map((feature, index) => (
               <Card key={index} className="card-hover">
