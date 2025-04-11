@@ -3,6 +3,7 @@ import React from 'react';
 import Layout from '../components/layout/Layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import ChatClients from '@/components/ChatClients';
 
 const Index: React.FC = () => {
   return (
@@ -21,6 +22,32 @@ const Index: React.FC = () => {
               <Button size="lg">Get Started</Button>
               <Button size="lg" variant="outline">Learn More</Button>
             </div>
+          </div>
+        </div>
+      </section>
+      
+      {/* Chat Section */}
+      <section className="section bg-background theme-transition">
+        <div className="container-fluid">
+          <div className="text-center mb-12">
+            <h2 className="mb-4">Chat System</h2>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Connect with other users in real-time
+            </p>
+          </div>
+          
+          <div className="max-w-xl mx-auto">
+            <Card>
+              <CardHeader>
+                <CardTitle>Chat Client</CardTitle>
+                <CardDescription>
+                  Set your name and see who's connected
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ChatClients />
+              </CardContent>
+            </Card>
           </div>
         </div>
       </section>
