@@ -1,12 +1,20 @@
 
 import React from 'react';
 import { useTheme } from '../ThemeProvider';
+import { useAuthStore } from '@/state/authStore';
 import { Button } from '@/components/ui/button';
-import { Moon, Sun } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Moon, Sun, LogOut, User } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 
 const Header: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
+  const { isAuthenticated, currentUser, logout } = useAuthStore();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
 
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur theme-transition">
@@ -37,13 +45,28 @@ const Header: React.FC = () => {
             <span className="sr-only">Toggle theme</span>
           </Button>
           
-          <Button variant="outline" size="sm" className="hidden md:inline-flex">
-            Sign In
-          </Button>
-          
-          <Button size="sm" className="hidden md:inline-flex">
-            Sign Up
-          </Button>
+          {isAuthenticated ? (
+            <>
+              <span className="hidden md:inline-flex text-sm font-medium">
+                {currentUser?.username}
+              </span>
+              
+              <Button variant="outline" size="sm" onClick={handleLogout} className="hidden md:inline-flex">
+                <LogOut className="h-4 w-4 mr-1" />
+                Logout
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button variant="outline" size="sm" className="hidden md:inline-flex" onClick={() => navigate('/login')}>
+                Sign In
+              </Button>
+              
+              <Button size="sm" className="hidden md:inline-flex" onClick={() => navigate('/register')}>
+                Sign Up
+              </Button>
+            </>
+          )}
           
           {/* Mobile menu button */}
           <Button variant="ghost" size="sm" className="md:hidden">
