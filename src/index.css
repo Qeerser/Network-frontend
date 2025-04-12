@@ -5,85 +5,73 @@
 
 @layer base {
   :root {
-    /* Light theme variables */
-    --background: 260 20% 99%;
-    --foreground: 260 10% 10%;
+    /* Light theme pixel art variables */
+    --background: 200 30% 96%;
+    --foreground: 200 10% 10%;
 
-    --card: 260 20% 99%;
-    --card-foreground: 260 10% 10%;
+    --card: 200 30% 98%;
+    --card-foreground: 200 10% 10%;
 
-    --popover: 260 20% 99%;
-    --popover-foreground: 260 10% 10%;
+    --popover: 200 30% 98%;
+    --popover-foreground: 200 10% 10%;
 
-    --primary: 260 80% 60%;
-    --primary-foreground: 260 10% 98%;
+    --primary: 200 65% 60%;
+    --primary-foreground: 200 10% 98%;
 
-    --secondary: 260 20% 92%;
-    --secondary-foreground: 260 10% 10%;
+    --secondary: 200 20% 92%;
+    --secondary-foreground: 200 10% 10%;
 
-    --muted: 260 20% 92%;
-    --muted-foreground: 260 10% 40%;
+    --muted: 200 20% 92%;
+    --muted-foreground: 200 10% 40%;
 
-    --accent: 260 20% 92%;
-    --accent-foreground: 260 10% 10%;
+    --accent: 200 20% 92%;
+    --accent-foreground: 200 10% 10%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 260 20% 90%;
-    --input: 260 20% 90%;
-    --ring: 260 80% 60%;
+    --border: 200 20% 88%;
+    --input: 200 20% 88%;
+    --ring: 200 65% 60%;
 
-    --radius: 0.5rem;
+    --radius: 0.25rem;
 
-    --sidebar-background: 260 20% 97%;
-    --sidebar-foreground: 260 10% 26%;
-    --sidebar-primary: 260 80% 60%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 260 20% 92%;
-    --sidebar-accent-foreground: 260 10% 10%;
-    --sidebar-border: 260 20% 90%;
-    --sidebar-ring: 260 80% 60%;
+    --pixel-shadow: 2px 2px 0px 0px rgba(0, 0, 0, 0.2);
+    --pixel-border: 2px solid rgba(0, 0, 0, 0.2);
   }
 
   .dark {
-    /* Dark theme variables */
-    --background: 260 15% 10%;
-    --foreground: 260 10% 98%;
+    /* Dark theme pixel art variables */
+    --background: 200 15% 10%;
+    --foreground: 200 10% 98%;
 
-    --card: 260 15% 10%;
-    --card-foreground: 260 10% 98%;
+    --card: 200 15% 12%;
+    --card-foreground: 200 10% 98%;
 
-    --popover: 260 15% 10%;
-    --popover-foreground: 260 10% 98%;
+    --popover: 200 15% 12%;
+    --popover-foreground: 200 10% 98%;
 
-    --primary: 260 70% 70%;
-    --primary-foreground: 260 10% 10%;
+    --primary: 200 65% 70%;
+    --primary-foreground: 200 10% 10%;
 
-    --secondary: 260 15% 20%;
-    --secondary-foreground: 260 10% 98%;
+    --secondary: 200 15% 20%;
+    --secondary-foreground: 200 10% 98%;
 
-    --muted: 260 15% 20%;
-    --muted-foreground: 260 10% 70%;
+    --muted: 200 15% 20%;
+    --muted-foreground: 200 10% 70%;
 
-    --accent: 260 15% 20%;
-    --accent-foreground: 260 10% 98%;
+    --accent: 200 15% 20%;
+    --accent-foreground: 200 10% 98%;
 
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 260 15% 20%;
-    --input: 260 15% 20%;
-    --ring: 260 70% 70%;
+    --border: 200 15% 25%;
+    --input: 200 15% 25%;
+    --ring: 200 65% 70%;
 
-    --sidebar-background: 260 15% 12%;
-    --sidebar-foreground: 260 10% 80%;
-    --sidebar-primary: 260 70% 70%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 260 15% 20%;
-    --sidebar-accent-foreground: 260 10% 98%;
-    --sidebar-border: 260 15% 20%;
-    --sidebar-ring: 260 70% 70%;
+    --pixel-shadow: 2px 2px 0px 0px rgba(255, 255, 255, 0.1);
+    --pixel-border: 2px solid rgba(255, 255, 255, 0.1);
   }
 }
 
@@ -95,45 +83,59 @@
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
+    image-rendering: pixelated;
     transition: background-color 0.3s ease, color 0.3s ease;
   }
 
   h1, h2, h3, h4, h5, h6 {
     @apply font-medium tracking-tight;
   }
+}
 
-  h1 {
-    @apply text-4xl md:text-5xl;
+/* Custom utility classes for pixel art style */
+@layer components {
+  .pixel-card {
+    @apply rounded border-2 shadow-[var(--pixel-shadow)];
+    image-rendering: pixelated;
+  }
+  
+  .pixel-button {
+    @apply rounded border-2 shadow-[var(--pixel-shadow)] hover:translate-y-[-2px] active:translate-y-[1px] transition-transform duration-100;
+    image-rendering: pixelated;
   }
 
-  h2 {
-    @apply text-3xl md:text-4xl;
+  .pixel-input {
+    @apply rounded border-2 shadow-[var(--pixel-shadow)];
+    image-rendering: pixelated;
   }
 
-  h3 {
-    @apply text-2xl md:text-3xl;
+  .pixel-tabs {
+    @apply flex gap-2 mb-4;
+  }
+
+  .pixel-tab {
+    @apply px-4 py-2 rounded-t border-2 border-b-0 shadow-[var(--pixel-shadow)] cursor-pointer;
+  }
+
+  .pixel-tab-active {
+    @apply bg-primary text-primary-foreground;
+  }
+
+  .pixel-slider {
+    @apply relative overflow-hidden;
+  }
+
+  .slider-transition {
+    @apply transition-all duration-300 ease-in-out;
   }
 }
 
-/* Custom utility classes */
-@layer components {
-  .container-fluid {
-    @apply w-full px-4 md:px-6 lg:px-8 mx-auto max-w-7xl;
-  }
-  
-  .section {
-    @apply py-12 md:py-16 lg:py-24;
-  }
-  
-  .hero-section {
-    @apply py-16 md:py-24 lg:py-32;
-  }
-  
-  .card-hover {
-    @apply hover:shadow-md transition-shadow duration-300;
-  }
-  
-  .theme-transition {
-    @apply transition-colors duration-300;
-  }
+/* Animation utilities */
+@keyframes pixelFadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.pixel-fade-in {
+  animation: pixelFadeIn 0.3s ease-out forwards;
 }

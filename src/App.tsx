@@ -8,8 +8,7 @@ import Index from "./pages/Index";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import NotFound from "./pages/NotFound";
-import Login from "./pages/login";
-import Register from "./pages/register";
+import Auth from "./pages/Auth";
 import { useAuthStore } from "./state/authStore";
 
 const queryClient = new QueryClient();
@@ -19,7 +18,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated } = useAuthStore();
   
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/auth" replace />;
   }
   
   return <>{children}</>;
@@ -33,9 +32,8 @@ const App = () => {
         <Sonner />
         <BrowserRouter>
           <Routes>
-            {/* Auth routes */}
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
+            {/* Auth route */}
+            <Route path="/auth" element={<Auth />} />
             
             {/* Protected routes */}
             <Route path="/" element={
