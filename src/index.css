@@ -1,4 +1,8 @@
 
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 @layer components {
   .pixel-card {
     @apply rounded-xl border-2 shadow-lg;
