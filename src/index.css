@@ -3,6 +3,16 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --transition-duration: 0.3s;
+}
+
+@layer base {
+  body {
+    @apply transition-colors duration-300;
+  }
+}
+
 @layer components {
   .pixel-card {
     @apply rounded-xl border-2 shadow-lg;
@@ -17,5 +27,25 @@
   .pixel-input {
     @apply rounded-xl border-2 shadow-md;
     image-rendering: pixelated;
+  }
+
+  .theme-transition {
+    @apply transition-colors duration-300;
+  }
+
+  .container-fluid {
+    @apply px-4 md:px-6 lg:px-8 max-w-7xl mx-auto py-10;
+  }
+
+  .section {
+    @apply py-16;
+  }
+
+  .hero-section {
+    @apply py-20 md:py-28 lg:py-32;
+  }
+
+  .card-hover {
+    @apply transition-all duration-200 hover:shadow-xl hover:scale-[1.02];
   }
 }

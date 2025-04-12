@@ -3,7 +3,7 @@ import React from 'react';
 import { useTheme } from '../ThemeProvider';
 import { useAuthStore } from '@/state/authStore';
 import { Button } from '@/components/ui/button';
-import { Moon, Sun, LogOut, User } from 'lucide-react';
+import { Moon, Sun, LogOut } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 
 const Header: React.FC = () => {
@@ -18,7 +18,7 @@ const Header: React.FC = () => {
 
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur theme-transition">
-      <div className="container-fluid flex h-16 items-center justify-between">
+      <div className="container flex h-16 items-center justify-between px-4 md:px-6">
         <div className="flex items-center gap-2">
           <Link to="/" className="flex items-center space-x-2">
             <span className="text-primary font-bold text-xl md:text-2xl">
@@ -40,9 +40,14 @@ const Header: React.FC = () => {
         </nav>
         
         <div className="flex items-center space-x-2">
-          <Button variant="ghost" size="icon" onClick={toggleTheme} className="h-9 w-9 rounded-md">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={toggleTheme} 
+            className="h-9 w-9 rounded-full"
+            aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+          >
             {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-            <span className="sr-only">Toggle theme</span>
           </Button>
           
           {isAuthenticated ? (
