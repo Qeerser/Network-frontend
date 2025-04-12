@@ -1,141 +1,17 @@
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-@layer base {
-  :root {
-    /* Light theme pixel art variables */
-    --background: 200 30% 96%;
-    --foreground: 200 10% 10%;
-
-    --card: 200 30% 98%;
-    --card-foreground: 200 10% 10%;
-
-    --popover: 200 30% 98%;
-    --popover-foreground: 200 10% 10%;
-
-    --primary: 200 65% 60%;
-    --primary-foreground: 200 10% 98%;
-
-    --secondary: 200 20% 92%;
-    --secondary-foreground: 200 10% 10%;
-
-    --muted: 200 20% 92%;
-    --muted-foreground: 200 10% 40%;
-
-    --accent: 200 20% 92%;
-    --accent-foreground: 200 10% 10%;
-
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-
-    --border: 200 20% 88%;
-    --input: 200 20% 88%;
-    --ring: 200 65% 60%;
-
-    --radius: 0.25rem;
-
-    --pixel-shadow: 2px 2px 0px 0px rgba(0, 0, 0, 0.2);
-    --pixel-border: 2px solid rgba(0, 0, 0, 0.2);
-  }
-
-  .dark {
-    /* Dark theme pixel art variables */
-    --background: 200 15% 10%;
-    --foreground: 200 10% 98%;
-
-    --card: 200 15% 12%;
-    --card-foreground: 200 10% 98%;
-
-    --popover: 200 15% 12%;
-    --popover-foreground: 200 10% 98%;
-
-    --primary: 200 65% 70%;
-    --primary-foreground: 200 10% 10%;
-
-    --secondary: 200 15% 20%;
-    --secondary-foreground: 200 10% 98%;
-
-    --muted: 200 15% 20%;
-    --muted-foreground: 200 10% 70%;
-
-    --accent: 200 15% 20%;
-    --accent-foreground: 200 10% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-
-    --border: 200 15% 25%;
-    --input: 200 15% 25%;
-    --ring: 200 65% 70%;
-
-    --pixel-shadow: 2px 2px 0px 0px rgba(255, 255, 255, 0.1);
-    --pixel-border: 2px solid rgba(255, 255, 255, 0.1);
-  }
-}
-
-@layer base {
-  * {
-    @apply border-border;
-  }
-
-  body {
-    @apply bg-background text-foreground;
-    font-feature-settings: "rlig" 1, "calt" 1;
-    image-rendering: pixelated;
-    transition: background-color 0.3s ease, color 0.3s ease;
-  }
-
-  h1, h2, h3, h4, h5, h6 {
-    @apply font-medium tracking-tight;
-  }
-}
-
-/* Custom utility classes for pixel art style */
 @layer components {
   .pixel-card {
-    @apply rounded border-2 shadow-[var(--pixel-shadow)];
+    @apply rounded-xl border-2 shadow-lg;
     image-rendering: pixelated;
   }
   
   .pixel-button {
-    @apply rounded border-2 shadow-[var(--pixel-shadow)] hover:translate-y-[-2px] active:translate-y-[1px] transition-transform duration-100;
+    @apply rounded-xl border-2 shadow-md hover:translate-y-[-2px] active:translate-y-[1px] transition-transform duration-100;
     image-rendering: pixelated;
   }
 
   .pixel-input {
-    @apply rounded border-2 shadow-[var(--pixel-shadow)];
+    @apply rounded-xl border-2 shadow-md;
     image-rendering: pixelated;
   }
-
-  .pixel-tabs {
-    @apply flex gap-2 mb-4;
-  }
-
-  .pixel-tab {
-    @apply px-4 py-2 rounded-t border-2 border-b-0 shadow-[var(--pixel-shadow)] cursor-pointer;
-  }
-
-  .pixel-tab-active {
-    @apply bg-primary text-primary-foreground;
-  }
-
-  .pixel-slider {
-    @apply relative overflow-hidden;
-  }
-
-  .slider-transition {
-    @apply transition-all duration-300 ease-in-out;
-  }
-}
-
-/* Animation utilities */
-@keyframes pixelFadeIn {
-  from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.pixel-fade-in {
-  animation: pixelFadeIn 0.3s ease-out forwards;
 }
