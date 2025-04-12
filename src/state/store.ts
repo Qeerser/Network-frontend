@@ -11,6 +11,9 @@ export interface ChatMessage {
   timestamp: number;
   isPrivate: boolean;
   to?: string; // For private messages or group name
+  image?: string; // Optional image URL
+  reactions?: string[]; // Array of emoji reactions
+  edited?: boolean; // Flag to indicate if message has been edited
 }
 
 // Define chat group type
@@ -36,7 +39,9 @@ interface ChatState {
   
   // Chat messages
   messages: ChatMessage[];
-  sendMessage: (content: string, to: string) => void;
+  sendMessage: (content: string, to: string, image?: string) => void;
+  editMessage: (messageId: string, newContent: string) => void;
+  reactToMessage: (messageId: string, reaction: string) => void;
   
   // Socket connection
   socket: Socket | null;
@@ -128,7 +133,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   
   // Messages state
   messages: [],
-  sendMessage: (content: string, to: string) => {
+  sendMessage: (content: string, to: string, image?: string) => {
     const { socket, clientName, availableGroups } = get();
     
     if (!socket || !socket.connected) {
@@ -145,7 +150,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
       from: clientName,
       isPrivate: !isGroup,
       to,
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      image,
+      reactions: []
     };
     
     // Add message to local state immediately for UI responsiveness
@@ -158,6 +165,61 @@ export const useChatStore = create<ChatState>((set, get) => ({
       socket.emit('groupMessage', messageData);
     } else {
       socket.emit('privateMessage', messageData);
+    }
+  },
+
+  editMessage: (messageId: string, newContent: string) => {
+    const { socket, messages } = get();
+    
+    // Find the message to edit
+    const messageToEdit = messages.find(msg => msg.id === messageId);
+    
+    if (!messageToEdit) {
+      console.error('Cannot edit message: Message not found');
+      return;
+    }
+    
+    // Update locally
+    set(state => ({
+      messages: state.messages.map(message => 
+        message.id === messageId 
+          ? { ...message, content: newContent, edited: true }
+          : message
+      )
+    }));
+    
+    // Send to server if connected
+    if (socket && socket.connected) {
+      socket.emit('editMessage', { messageId, newContent });
+    }
+  },
+  
+  reactToMessage: (messageId: string, reaction: string) => {
+    const { socket, messages } = get();
+    
+    // Find the message to react to
+    const messageToReact = messages.find(msg => msg.id === messageId);
+    
+    if (!messageToReact) {
+      console.error('Cannot react to message: Message not found');
+      return;
+    }
+    
+    // Update locally
+    set(state => ({
+      messages: state.messages.map(message => 
+        message.id === messageId 
+          ? { 
+              ...message, 
+              reactions: [...(message.reactions || []), reaction]
+            }
+          : message
+      )
+    }));
+    
+    // Send to server if connected
+    if (socket && socket.connected) {
+      socket.emit('reactToMessage', { messageId, reaction });
     }
   },
   
@@ -207,6 +269,31 @@ export const useChatStore = create<ChatState>((set, get) => ({
     socket.on('messageReceived', (message: ChatMessage) => {
       set(state => ({ 
         messages: [...state.messages, message] 
+      }));
+    });
+    
+    // Handle message edits
+    socket.on('messageEdited', ({ messageId, newContent }: { messageId: string, newContent: string }) => {
+      set(state => ({
+        messages: state.messages.map(message => 
+          message.id === messageId 
+            ? { ...message, content: newContent, edited: true }
+            : message
+        )
+      }));
+    });
+    
+    // Handle message reactions
+    socket.on('messageReacted', ({ messageId, reaction }: { messageId: string, reaction: string }) => {
+      set(state => ({
+        messages: state.messages.map(message => 
+          message.id === messageId 
+            ? { 
+                ...message, 
+                reactions: [...(message.reactions || []), reaction]
+              }
+            : message
+        )
       }));
     });
     

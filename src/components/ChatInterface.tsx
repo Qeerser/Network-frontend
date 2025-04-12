@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { PlusCircle, Send, UserPlus, Users } from 'lucide-react';
+import { PlusCircle, Send, UserPlus, Users, Image, Smile, X } from 'lucide-react';
 import ChatMessage from './ChatMessage';
 import {
   Dialog,
@@ -22,6 +22,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { toast } from '@/hooks/use-toast';
+import EmojiPicker from './EmojiPicker';
 
 const ChatInterface: React.FC = () => {
   const { 
@@ -29,6 +30,8 @@ const ChatInterface: React.FC = () => {
     connectedClients,
     messages,
     sendMessage,
+    editMessage,
+    reactToMessage,
     joinGroup,
     createGroup,
     leaveGroup,
@@ -40,6 +43,9 @@ const ChatInterface: React.FC = () => {
   const [chatType, setChatType] = useState<'private' | 'group'>('private');
   const [newGroupName, setNewGroupName] = useState('');
   const [showNewGroupDialog, setShowNewGroupDialog] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [imageAttachment, setImageAttachment] = useState<string | null>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
@@ -64,10 +70,12 @@ const ChatInterface: React.FC = () => {
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!messageText.trim() || !selectedChat) return;
+    if ((!messageText.trim() && !imageAttachment) || !selectedChat) return;
     
-    sendMessage(messageText, selectedChat);
+    sendMessage(messageText, selectedChat, imageAttachment || undefined);
     setMessageText('');
+    setImageAttachment(null);
+    setShowEmojiPicker(false);
     
     // Show toast for sent message
     toast({
@@ -116,6 +124,29 @@ const ChatInterface: React.FC = () => {
       description: `You have left "${groupName}"`,
       variant: "default",
     });
+  };
+  
+  const handleEmojiSelect = (emoji: string) => {
+    setMessageText(prev => prev + emoji);
+    setShowEmojiPicker(false);
+  };
+  
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setImageAttachment(event.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setImageAttachment(null);
+    if (imageInputRef.current) {
+      imageInputRef.current.value = '';
+    }
   };
   
   // Filter out the current user from the connected clients list
@@ -265,6 +296,8 @@ const ChatInterface: React.FC = () => {
                           key={msg.id}
                           message={msg}
                           isOwnMessage={msg.from === clientName}
+                          onEditMessage={msg.from === clientName ? editMessage : undefined}
+                          onReactMessage={reactToMessage}
                         />
                       ))}
                       <div ref={messagesEndRef} />
@@ -291,17 +324,79 @@ const ChatInterface: React.FC = () => {
             </ScrollArea>
             
             {selectedChat && (
-              <form onSubmit={handleSendMessage} className="p-4 border-t flex gap-2">
-                <Input
-                  value={messageText}
-                  onChange={(e) => setMessageText(e.target.value)}
-                  placeholder={`Message ${chatType === 'private' ? selectedChat : 'group'}`}
-                  className="flex-1"
-                />
-                <Button type="submit" size="sm" disabled={!messageText.trim()}>
-                  <Send size={16} className="mr-2" /> Send
-                </Button>
-              </form>
+              <div className="p-4 border-t">
+                {/* Image preview */}
+                {imageAttachment && (
+                  <div className="mb-2 relative">
+                    <img 
+                      src={imageAttachment} 
+                      alt="Attachment preview" 
+                      className="h-24 object-contain rounded border shadow-[var(--pixel-shadow)]" 
+                    />
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={handleRemoveImage}
+                      className="absolute top-1 right-1 h-6 w-6 p-0 rounded-full"
+                    >
+                      <X size={12} />
+                    </Button>
+                  </div>
+                )}
+                
+                {/* Emoji picker */}
+                {showEmojiPicker && (
+                  <div className="mb-2">
+                    <EmojiPicker onEmojiSelect={handleEmojiSelect} />
+                  </div>
+                )}
+                
+                <form onSubmit={handleSendMessage} className="flex gap-2">
+                  {/* Hidden file input */}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    style={{ display: 'none' }}
+                    ref={imageInputRef}
+                  />
+                  
+                  <Input
+                    value={messageText}
+                    onChange={(e) => setMessageText(e.target.value)}
+                    placeholder={`Message ${chatType === 'private' ? selectedChat : 'group'}`}
+                    className="flex-1"
+                  />
+                  
+                  <Button 
+                    type="button" 
+                    size="icon" 
+                    variant="ghost"
+                    onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                    className="h-10 w-10 p-0"
+                  >
+                    <Smile size={20} />
+                  </Button>
+                  
+                  <Button 
+                    type="button" 
+                    size="icon" 
+                    variant="ghost"
+                    onClick={() => imageInputRef.current?.click()}
+                    className="h-10 w-10 p-0"
+                  >
+                    <Image size={20} />
+                  </Button>
+                  
+                  <Button 
+                    type="submit" 
+                    size="sm" 
+                    disabled={!messageText.trim() && !imageAttachment}
+                  >
+                    <Send size={16} className="mr-2" /> Send
+                  </Button>
+                </form>
+              </div>
             )}
           </div>
         </div>
