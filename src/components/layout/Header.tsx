@@ -17,27 +17,10 @@ const Header: React.FC = () => {
   };
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur theme-transition">
+    <header className="sticky top-0 z-40 w-full bg-background/95 backdrop-blur theme-transition \">
       <div className="container flex h-16 items-center justify-between px-4 md:px-6">
         <div className="flex items-center gap-2">
-          <Link to="/" className="flex items-center space-x-2">
-            <span className="text-primary font-bold text-xl md:text-2xl">
-              ChopKhui
-            </span>
-          </Link>
         </div>
-        
-        {/* <nav className="hidden md:flex items-center space-x-6 text-sm font-medium">
-          <Link to="/" className="transition-colors hover:text-foreground/80">
-            Home
-          </Link>
-          <Link to="/about" className="transition-colors hover:text-foreground/80">
-            About
-          </Link>
-          <Link to="/contact" className="transition-colors hover:text-foreground/80">
-            Contact
-          </Link>
-        </nav> */}
         
         <div className="flex items-center space-x-2">
           <Button 
@@ -52,13 +35,9 @@ const Header: React.FC = () => {
           
           {isAuthenticated ? (
             <>
-              <span className="hidden md:inline-flex text-sm font-medium">
-                {currentUser?.username}
-              </span>
-              
+        
               <Button variant="outline" size="sm" onClick={handleLogout} className="hidden md:inline-flex">
-                <LogOut className="h-4 w-4 mr-1" />
-                Logout
+                <LogOut className="h-4 w-4" />
               </Button>
             </>
           ) : (
@@ -94,6 +73,7 @@ const Header: React.FC = () => {
             <span className="sr-only">Menu</span>
           </Button>
         </div>
+        
       </div>
     </header>
   );

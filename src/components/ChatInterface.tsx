@@ -317,25 +317,7 @@ const ChatInterface: React.FC = () => {
 
   return (
     <div className="flex flex-col h-full border rounded-md overflow-hidden">
-      <div className="flex justify-between items-center px-4 py-2 bg-secondary/30 border-b">
-        <h1 className="text-lg font-bold">ChopKhui</h1>
-        <div className="flex gap-2">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={toggleTheme} 
-            className="h-8 w-8 rounded-full"
-            aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
-          >
-            {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-          </Button>
-          
-          <Button variant="outline" size="sm" onClick={handleLogout} className="h-8">
-            <LogOut className="h-4 w-4 mr-1" />
-            Logout
-          </Button>
-        </div>
-      </div>
+
       
       <Tabs 
         defaultValue="private" 

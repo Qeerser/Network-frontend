@@ -54,8 +54,8 @@ const ChatClients: React.FC = () => {
   return (
     // <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <div>
-          Pixel Chat
+        <div className="font-bold">
+          ChopKhui
         </div>
         <form onSubmit={handleSetName} className="flex gap-2">
           <Input
