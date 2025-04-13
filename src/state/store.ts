@@ -3,6 +3,8 @@ import { create } from "zustand";
 import { io, Socket } from "socket.io-client";
 import { v4 as uuidv4 } from "uuid";
 import { useAuthStore } from "./authStore";
+import { toast } from "@/components/ui/use-toast";
+import { getConfig } from "@/config";
 
 // Define the message type
 export interface ChatMessage {
@@ -66,6 +68,13 @@ interface ChatState {
 	editMessage: (messageId: string, newContent: string) => void;
 	reactToMessage: (messageId: string, reaction: string) => void;
 	clearChatMessages: () => void;
+	
+	// Message fetching
+	fetchMessages: (target: string, type: 'private' | 'group', limit?: number, before?: number) => void;
+	isLoadingMessages: boolean;
+	hasMoreMessages: boolean;
+	oldestMessageTimestamp: Record<string, number>;
+	setOldestMessageTimestamp: (chatId: string, timestamp: number) => void;
 
 	// Socket connection
 	socket: Socket | null;
@@ -74,8 +83,11 @@ interface ChatState {
 	disconnect: () => void;
 }
 
-// Socket server URL - replace with your actual server URL when deployed
-const SOCKET_SERVER_URL = "http://localhost:5000";
+// Get socket server URL from config
+const getSocketServerUrl = () => {
+	const config = getConfig();
+	return config.socketServerUrl;
+};
 
 export const useChatStore = create<ChatState>((set, get) => ({
   
@@ -219,15 +231,81 @@ export const useChatStore = create<ChatState>((set, get) => ({
 		set({ messages: [] });
 	},
 	
-	fetchMessages: (target: string, type: 'private' | 'group') => {
+	// Message fetching state
+	isLoadingMessages: false,
+	hasMoreMessages: true,
+	oldestMessageTimestamp: {},
+	
+	setOldestMessageTimestamp: (chatId: string, timestamp: number) => {
+		set((state) => ({
+			oldestMessageTimestamp: {
+				...state.oldestMessageTimestamp,
+				[chatId]: timestamp
+			}
+		}));
+	},
+	
+	fetchMessages: (target: string, type: 'private' | 'group', limit = 20, before?: number) => {
 		const { socket } = get();
 
 		if (!socket || !socket.connected) {
 			console.error("Cannot fetch messages: Socket not connected");
+			toast({
+				title: "Connection Error",
+				description: "Cannot fetch messages: Socket not connected",
+				variant: "destructive"
+			});
 			return;
 		}
+		
+		// Set loading state
+		set({ isLoadingMessages: true });
+		
+		// Prepare params
+		const params = {
+			target,
+			type,
+			limit,
+			before
+		};
 
-		socket.emit("fetchMessages", { target, type });
+		// Emit fetch event
+		socket.emit("fetchMessages", params);
+		
+		// Handle message fetch results
+		socket.once("messagesFetched", (response: { 
+			messages: ChatMessage[], 
+			hasMore: boolean 
+		}) => {
+			const { messages: fetchedMessages, hasMore } = response;
+			
+			// Find oldest message timestamp
+			if (fetchedMessages.length > 0) {
+				const timestamps = fetchedMessages.map(m => m.timestamp);
+				const oldestTimestamp = Math.min(...timestamps);
+				
+				// Update oldest message timestamp for this chat
+				get().setOldestMessageTimestamp(target, oldestTimestamp);
+			}
+			
+			// Update messages - prepend older messages
+			set((state) => ({
+				messages: [...fetchedMessages, ...state.messages],
+				isLoadingMessages: false,
+				hasMoreMessages: hasMore
+			}));
+		});
+		
+		// Handle fetch errors
+		socket.once("messageFetchError", (error: string) => {
+			console.error("Error fetching messages:", error);
+			toast({
+				title: "Failed to load messages",
+				description: error,
+				variant: "destructive"
+			});
+			set({ isLoadingMessages: false });
+		});
 	},
 	
 	sendMessage: (content: string, to: string, toId?: string, image?: string) => {
@@ -348,9 +426,12 @@ export const useChatStore = create<ChatState>((set, get) => ({
 		const authState = useAuthStore.getState();
 		const token = authState.token || '';
 		const userId = authState.currentUser?.id || '';
+		
+		// Get socket server URL from config
+		const socketServerUrl = getSocketServerUrl();
 
 		// Create a new socket connection
-		const socket = io(SOCKET_SERVER_URL, {
+		const socket = io(socketServerUrl, {
 			autoConnect: true,
 			reconnection: true,
 			auth: {
