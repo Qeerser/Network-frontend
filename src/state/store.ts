@@ -283,8 +283,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
 		}));
 	},
 
-	fetchMessages: (target: string, type: "private" | "group", limit = 20, before?: number) => {
-		const { socket } = get();
+	fetchMessages: (target: string, type: "private" | "group", limit = 5, before?: number) => {
+		const { socket ,oldestMessageTimestamp } = get();
 
 		if (!socket || !socket.connected) {
 			console.error("Cannot fetch messages: Socket not connected");
@@ -304,7 +304,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
 			target,
 			type,
 			limit,
-			before,
+			before : before || oldestMessageTimestamp[target] || Date.now(),
 		};
 
 		// Emit fetch event
@@ -495,7 +495,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
 		// Handle client list updates - now with IDs
 		socket.on("clients", (clients: { name: string; id: string }[]) => {
-			console.log("Connected clients:", clients);
 			if (Array.isArray(clients)) {
 				set({
 					connectedClients: clients,
@@ -573,6 +572,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
 						: message
 				),
 			}));
+		});
+
+		socket.onAny((event, ...args) => {
+			console.log(`Received event: ${event}`, args);
 		});
 
 		// Save socket to state
