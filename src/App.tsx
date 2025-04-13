@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -29,49 +30,49 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 const App = () => {
 	return (
 		<QueryClientProvider client={queryClient}>
-			<TooltipProvider>
-				<ThemeProvider>
-				<Toaster />
-				<Sonner />
-				<BrowserRouter>
-					<Routes>
-						{/* Auth route */}
-						<Route path="/auth" element={<Auth />} />
+			<ThemeProvider>
+				<TooltipProvider>
+					<Toaster />
+					<Sonner />
+					<BrowserRouter>
+						<Routes>
+							{/* Auth route */}
+							<Route path="/auth" element={<Auth />} />
 
-						{/* Protected routes */}
-						<Route
-							path="/"
-							element={
-								<ProtectedRoute>
-									<Index />
-								</ProtectedRoute>
-							}
-						/>
-						<Route
-							path="/about"
-							element={
-								<ProtectedRoute>
-									<About />
-								</ProtectedRoute>
-							}
-						/>
-						<Route
-							path="/contact"
-							element={
-								<ProtectedRoute>
-									<Contact />
-								</ProtectedRoute>
-							}
-						/>
-						<Route path="/login" element={<Login />}></Route>
-            <Route path="/register" element={<Register />}></Route>
+							{/* Protected routes */}
+							<Route
+								path="/"
+								element={
+									<ProtectedRoute>
+										<Index />
+									</ProtectedRoute>
+								}
+							/>
+							<Route
+								path="/about"
+								element={
+									<ProtectedRoute>
+										<About />
+									</ProtectedRoute>
+								}
+							/>
+							<Route
+								path="/contact"
+								element={
+									<ProtectedRoute>
+										<Contact />
+									</ProtectedRoute>
+								}
+							/>
+							<Route path="/login" element={<Login />}></Route>
+							<Route path="/register" element={<Register />}></Route>
 
-						{/* Catch-all route */}
-						<Route path="*" element={<NotFound />} />
-					</Routes>
-				</BrowserRouter>
-				</ThemeProvider>
-			</TooltipProvider>
+							{/* Catch-all route */}
+							<Route path="*" element={<NotFound />} />
+						</Routes>
+					</BrowserRouter>
+				</TooltipProvider>
+			</ThemeProvider>
 		</QueryClientProvider>
 	);
 };

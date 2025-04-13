@@ -1,3 +1,4 @@
+
 import { create } from "zustand";
 import { io, Socket } from "socket.io-client";
 import { v4 as uuidv4 } from "uuid";
@@ -7,10 +8,12 @@ import { useAuthStore } from "./authStore";
 export interface ChatMessage {
 	id: string;
 	from: string;
+	fromId: string; // Added userId for the sender
 	content: string;
 	timestamp: number;
 	isPrivate: boolean;
 	to?: string; // For private messages or group name
+	toId?: string; // Added userId for the recipient
 	image?: string; // Optional image URL
 	reactions?: string; // Single emoji reaction 
 	edited?: boolean; // Flag to indicate if message has been edited
@@ -20,7 +23,9 @@ export interface ChatMessage {
 export interface ChatGroup {
 	name: string;
 	members: string[];
+	memberIds: string[]; // Added for storing user IDs
 	creator?: string;
+	creatorId?: string; // Added creator ID
 	lastMessage?: {
 		content: string;
 		timestamp: number;
@@ -31,16 +36,21 @@ export interface ChatGroup {
 interface ChatState {
 	// Client information
 	clientName: string;
+	clientId: string;
 	setClientName: (name: string) => void;
+	setClientId: (id: string) => void;
 
 	// Connected clients
 	connectedClients: string[];
+	connectedClientIds: string[];
 	offlineClients: string[];
+	offlineClientIds: string[];
 
 	// Active chat
 	activeChat: string | null;
+	activeChatId: string | null;
 	activeChatType: 'private' | 'group' | null;
-	setActiveChat: (name: string | null, type: 'private' | 'group' | null) => void;
+	setActiveChat: (name: string | null, type: 'private' | 'group' | null, id?: string | null) => void;
 	clearActiveChat: () => void;
 
 	// Chat groups
@@ -52,7 +62,7 @@ interface ChatState {
 
 	// Chat messages
 	messages: ChatMessage[];
-	sendMessage: (content: string, to: string, image?: string) => void;
+	sendMessage: (content: string, to: string, toId?: string, image?: string) => void;
 	editMessage: (messageId: string, newContent: string) => void;
 	reactToMessage: (messageId: string, reaction: string) => void;
 	clearChatMessages: () => void;
@@ -69,8 +79,9 @@ const SOCKET_SERVER_URL = "http://localhost:5000";
 
 export const useChatStore = create<ChatState>((set, get) => ({
   
-	// Client name state - add null check for currentUser
+	// Client name and ID state - add null check for currentUser
 	clientName: useAuthStore.getState().currentUser?.username || "Guest",
+	clientId: useAuthStore.getState().currentUser?.id || uuidv4(),
 	setClientName: (name: string) => {
 		set({ clientName: name });
 
@@ -80,25 +91,31 @@ export const useChatStore = create<ChatState>((set, get) => ({
 			socket.emit("updateName", name);
 		}
 	},
+	setClientId: (id: string) => {
+		set({ clientId: id });
+	},
 
 	// Connected clients state
 	connectedClients: [],
+	connectedClientIds: [],
 	offlineClients: [],
+	offlineClientIds: [],
 
 	// Active chat state
 	activeChat: null,
+	activeChatId: null,
 	activeChatType: null,
-	setActiveChat: (name, type) => {
-		set({ activeChat: name, activeChatType: type });
+	setActiveChat: (name, type, id = null) => {
+		set({ activeChat: name, activeChatType: type, activeChatId: id });
 	},
 	clearActiveChat: () => {
-		set({ activeChat: null, activeChatType: null });
+		set({ activeChat: null, activeChatType: null, activeChatId: null });
 	},
 
 	// Chat groups state
 	availableGroups: [],
 	createGroup: (name: string) => {
-		const { socket, clientName, availableGroups } = get();
+		const { socket, clientName, clientId, availableGroups } = get();
 
 		// Check if group already exists
 		if (availableGroups.some((group) => group.name === name)) {
@@ -111,61 +128,71 @@ export const useChatStore = create<ChatState>((set, get) => ({
 			availableGroups: [...state.availableGroups, { 
 				name, 
 				members: [clientName],
-				creator: clientName 
+				memberIds: [clientId],
+				creator: clientName,
+				creatorId: clientId 
 			}],
 		}));
 
 		// Emit to server if connected
 		if (socket && socket.connected) {
-			socket.emit("createGroup", { name, creator: clientName });
+			socket.emit("createGroup", { name, creator: clientName, creatorId: clientId });
 		}
 	},
 
 	joinGroup: (groupName: string) => {
-		const { socket, clientName, availableGroups } = get();
+		const { socket, clientName, clientId, availableGroups } = get();
 
 		// Update local state
 		set((state) => ({
 			availableGroups: state.availableGroups.map((group) =>
-				group.name === groupName && !group.members.includes(clientName)
-					? { ...group, members: [...group.members, clientName] }
+				group.name === groupName && (!group.members.includes(clientName) || !group.memberIds.includes(clientId))
+					? { 
+						...group, 
+						members: [...group.members, clientName],
+						memberIds: [...(group.memberIds || []), clientId]
+					}
 					: group
 			),
 		}));
 
 		// Emit to server
 		if (socket && socket.connected) {
-			socket.emit("joinGroup", { groupName, client: clientName });
+			socket.emit("joinGroup", { groupName, client: clientName, clientId });
 		}
 	},
 
 	leaveGroup: (groupName: string) => {
-		const { socket, clientName, activeChat, activeChatType } = get();
+		const { socket, clientName, clientId, activeChat, activeChatType } = get();
 
 		// Update local state
 		set((state) => ({
 			availableGroups: state.availableGroups.map((group) =>
-				group.name === groupName ? { ...group, members: group.members.filter((m) => m !== clientName) } : group
+				group.name === groupName ? { 
+					...group, 
+					members: group.members.filter((m) => m !== clientName),
+					memberIds: (group.memberIds || []).filter((id) => id !== clientId)
+				} : group
 			),
 		}));
 
 		// If this was the active chat, clear it
 		if (activeChat === groupName && activeChatType === 'group') {
-			set({ activeChat: null, activeChatType: null });
+			set({ activeChat: null, activeChatType: null, activeChatId: null });
 		}
 
 		// Emit to server
 		if (socket && socket.connected) {
-			socket.emit("leaveGroup", { groupName, client: clientName });
+			socket.emit("leaveGroup", { groupName, client: clientName, clientId });
 		}
 	},
 	
 	deleteGroup: (groupName: string) => {
-		const { socket, clientName, activeChat, activeChatType } = get();
+		const { socket, clientName, clientId, activeChat, activeChatType } = get();
 		
 		// Check if the user is the creator before deleting
 		const group = get().availableGroups.find(g => g.name === groupName);
-		if (!group || group.creator !== clientName) {
+		if (!group || (group.creator !== clientName && group.creatorId !== clientId)) {
 			console.warn("You don't have permission to delete this group");
 			return;
 		}
@@ -177,12 +204,12 @@ export const useChatStore = create<ChatState>((set, get) => ({
 		
 		// If this was the active chat, clear it
 		if (activeChat === groupName && activeChatType === 'group') {
-			set({ activeChat: null, activeChatType: null });
+			set({ activeChat: null, activeChatType: null, activeChatId: null });
 		}
 		
 		// Emit to server
 		if (socket && socket.connected) {
-			socket.emit("deleteGroup", { groupName, client: clientName });
+			socket.emit("deleteGroup", { groupName, client: clientName, clientId });
 		}
 	},
 
@@ -192,8 +219,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
 		set({ messages: [] });
 	},
 	
-	sendMessage: (content: string, to: string, image?: string) => {
-		const { socket, clientName, availableGroups } = get();
+	sendMessage: (content: string, to: string, toId?: string, image?: string) => {
+		const { socket, clientName, clientId, availableGroups } = get();
 
 		if (!socket || !socket.connected) {
 			console.error("Cannot send message: Socket not connected");
@@ -207,8 +234,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
 			id: uuidv4(),
 			content,
 			from: clientName,
+			fromId: clientId,
 			isPrivate: !isGroup,
 			to,
+			toId,
 			timestamp: Date.now(),
 			image,
 		};
@@ -307,6 +336,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
 		// Get token if authenticated
 		const authState = useAuthStore.getState();
 		const token = authState.token || '';
+		const userId = authState.currentUser?.id || '';
 
 		// Create a new socket connection
 		const socket = io(SOCKET_SERVER_URL, {
@@ -314,6 +344,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
 			reconnection: true,
 			auth: {
 				token: token,
+				userId: userId
 			},
 		});
 
@@ -322,10 +353,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
 			console.log("Connected to socket server");
 			set({ isConnected: true });
 
-			// Send current name if it exists
-			const { clientName } = get();
-			if (clientName) {
-				socket.emit("updateName", clientName);
+			// Send current name and ID if it exists
+			const { clientName, clientId } = get();
+			if (clientName && clientId) {
+				socket.emit("updateClient", { name: clientName, id: clientId });
 			}
 		});
 
@@ -335,14 +366,20 @@ export const useChatStore = create<ChatState>((set, get) => ({
 			set({ isConnected: false });
 		});
 
-		// Handle client list updates
-		socket.on("clients", (clients: string[]) => {
-			set({ connectedClients: clients });
+		// Handle client list updates - now with IDs
+		socket.on("clients", (clients: {name: string, id: string}[]) => {
+			set({ 
+				connectedClients: clients.map(c => c.name),
+				connectedClientIds: clients.map(c => c.id)
+			});
 		});
 		
-		// Handle offline clients
-		socket.on("offlineClients", (clients: string[]) => {
-			set({ offlineClients: clients });
+		// Handle offline clients - now with IDs
+		socket.on("offlineClients", (clients: {name: string, id: string}[]) => {
+			set({ 
+				offlineClients: clients.map(c => c.name),
+				offlineClientIds: clients.map(c => c.id)
+			});
 		});
 
 		// Handle group list updates

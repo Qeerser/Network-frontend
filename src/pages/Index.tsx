@@ -10,15 +10,18 @@ import ChatClients from '@/components/ChatClients';
 
 const Index: React.FC = () => {
   const { isAuthenticated, currentUser } = useAuthStore();
-  const { setClientName } = useChatStore();
+  const { setClientName, setClientId } = useChatStore();
   const navigate = useNavigate();
   
-  // Update the clientName when the user logs in
+  // Update the client name and ID when the user logs in
   useEffect(() => {
     if (currentUser?.username) {
       setClientName(currentUser.username);
+      if (currentUser.id) {
+        setClientId(currentUser.id);
+      }
     }
-  }, [currentUser, setClientName]);
+  }, [currentUser, setClientName, setClientId]);
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -29,18 +32,18 @@ const Index: React.FC = () => {
 
   return (
     <Layout>
-      <div className="section fixed inset-0 overflow-hidden bg-background theme-transition">
-        <div className="container-fluid h-full py-4">
+      <div className="fixed inset-0 overflow-hidden bg-background theme-transition">
+        <div className="h-full py-4 px-4 md:px-8">
           <div className="max-w-6xl mx-auto h-full">
             <Card className="flex flex-col h-full overflow-hidden shadow-lg">
-              <CardHeader>
+              <CardHeader className="sticky top-0 z-10 bg-card py-2 px-4">
                 <CardTitle> 
                   <ChatClients /> 
                 </CardTitle>
-              </CardHeader >
-                <CardContent className="flex-1 overflow-hidden">
-                  <ChatInterface />
-                </CardContent>
+              </CardHeader>
+              <CardContent className="flex-1 p-0 overflow-hidden">
+                <ChatInterface />
+              </CardContent>
             </Card>
           </div>
         </div>
