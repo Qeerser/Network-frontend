@@ -1,4 +1,3 @@
-
 import { create } from "zustand";
 import { io, Socket } from "socket.io-client";
 import { v4 as uuidv4 } from "uuid";
@@ -70,8 +69,8 @@ const SOCKET_SERVER_URL = "http://localhost:5000";
 
 export const useChatStore = create<ChatState>((set, get) => ({
   
-	// Client name state
-	clientName: useAuthStore.getState().currentUser.username,
+	// Client name state - add null check for currentUser
+	clientName: useAuthStore.getState().currentUser?.username || "Guest",
 	setClientName: (name: string) => {
 		set({ clientName: name });
 
@@ -304,7 +303,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
 	connect: () => {
 		// Check if already connected
 		if (get().socket?.connected) return;
-		const token = useAuthStore.getState().token;
+		
+		// Get token if authenticated
+		const authState = useAuthStore.getState();
+		const token = authState.token || '';
 
 		// Create a new socket connection
 		const socket = io(SOCKET_SERVER_URL, {
