@@ -145,7 +145,7 @@ const ChatInterface: React.FC = () => {
         }));
       }, 1000);
     }
-  }, [activeChat, activeChat, loadingMessages, oldestMessageTime]);
+  }, [activeChat, loadingMessages, oldestMessageTime]);
   
   // Handle tab change
   const handleTabChange = (value: string) => {
@@ -202,7 +202,7 @@ const ChatInterface: React.FC = () => {
     // Show toast for sent message
     toast({
       title: "Message Sent",
-      description: `To: ${activeChat}`,
+      description: `To: ${activeChat.name}`,
       duration: 2000,
     });
   };
@@ -416,7 +416,7 @@ const ChatInterface: React.FC = () => {
                             key={client.id}
                             onClick={() => setActiveChat({id: client.id, name: client.name, type :'private'})}
                             className={`p-2 rounded-md cursor-pointer flex items-center gap-2 opacity-60 ${
-                              activeChat === client && chatType === 'private' ? 'bg-primary/10' : 'hover:bg-secondary/20'
+                              activeChat.id === client.id && chatType === 'private' ? 'bg-primary/10' : 'hover:bg-secondary/20'
                             }`}
                           >
                             <span className="h-2 w-2 rounded-full bg-gray-400"></span>
@@ -584,8 +584,8 @@ const ChatInterface: React.FC = () => {
                     <div className="h-full flex items-center justify-center">
                       <p className="text-muted-foreground text-center">
                         {chatType === 'private' 
-                          ? `Start a conversation with ${activeChat}` 
-                          : `Start chatting in ${activeChat}`}
+                          ? `Start a conversation with ${activeChat.name}` 
+                          : `Start chatting in ${activeChat.name}`}
                       </p>
                     </div>
                   )}
@@ -642,7 +642,7 @@ const ChatInterface: React.FC = () => {
                   <Input
                     value={messageText}
                     onChange={(e) => setMessageText(e.target.value)}
-                    placeholder={`Message ${chatType === 'private' ? activeChat : 'group'}`}
+                    placeholder={`Message ${chatType === 'private' ? activeChat.name : 'group'}`}
                     className="flex-1"
                   />
                   
