@@ -219,6 +219,17 @@ export const useChatStore = create<ChatState>((set, get) => ({
 		set({ messages: [] });
 	},
 	
+	fetchMessages: (target: string, type: 'private' | 'group') => {
+		const { socket } = get();
+
+		if (!socket || !socket.connected) {
+			console.error("Cannot fetch messages: Socket not connected");
+			return;
+		}
+
+		socket.emit("fetchMessages", { target, type });
+	},
+	
 	sendMessage: (content: string, to: string, toId?: string, image?: string) => {
 		const { socket, clientName, clientId, availableGroups } = get();
 
