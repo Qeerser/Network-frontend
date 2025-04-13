@@ -1,10 +1,13 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useChatStore } from '@/state/store';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useTheme } from './ThemeProvider';
+import { useAuthStore } from '@/state/authStore';
+import { useNavigate } from 'react-router-dom';
 import { 
   PlusCircle, 
   Send, 
@@ -15,8 +18,10 @@ import {
   X, 
   Trash2, 
   LogOut,
-  UserX,
-  RefreshCw
+  Moon,
+  Sun,
+  RefreshCw,
+  Loader
 } from 'lucide-react';
 import ChatMessage from './ChatMessage';
 import {
@@ -37,6 +42,10 @@ import { toast } from '@/hooks/use-toast';
 import EmojiPicker from './EmojiPicker';
 
 const ChatInterface: React.FC = () => {
+  const { theme, toggleTheme } = useTheme();
+  const { logout, currentUser } = useAuthStore();
+  const navigate = useNavigate();
+  
   const { 
     clientName,
     connectedClients,
@@ -63,21 +72,99 @@ const ChatInterface: React.FC = () => {
   const [showNewGroupDialog, setShowNewGroupDialog] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [imageAttachment, setImageAttachment] = useState<string | null>(null);
+  const [loadingMessages, setLoadingMessages] = useState(false);
+  const [oldestMessageTime, setOldestMessageTime] = useState<Record<string, number>>({});
   const imageInputRef = useRef<HTMLInputElement>(null);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  
+  // Handle logout
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
   
   // Set active chat when selected chat changes
   useEffect(() => {
     if (activeChat) {
       setActiveChat(activeChat, chatType);
+      // Simulate fetching messages for the selected chat
+      fetchMessages(activeChat, chatType);
     }
   }, [activeChat, chatType, setActiveChat]);
   
+  // Simulate fetching older messages
+  const fetchMessages = useCallback((chatId: string, type: 'private' | 'group') => {
+    setLoadingMessages(true);
+    
+    // Simulate API call with setTimeout
+    setTimeout(() => {
+      setLoadingMessages(false);
+      
+      // Store the oldest message time for this chat
+      const chatMessages = messages.filter(msg => {
+        if (type === 'private') {
+          return (msg.from === chatId && msg.to === clientName) || 
+                 (msg.from === clientName && msg.to === chatId);
+        } else {
+          return msg.to === chatId && !msg.isPrivate;
+        }
+      });
+      
+      if (chatMessages.length > 0) {
+        // Find oldest message
+        const oldest = chatMessages.reduce((prev, curr) => 
+          prev.timestamp < curr.timestamp ? prev : curr
+        );
+        
+        setOldestMessageTime(prev => ({
+          ...prev,
+          [`${type}-${chatId}`]: oldest.timestamp
+        }));
+      }
+    }, 500); // Simulate network delay
+  }, [messages, clientName]);
+  
+  // Load more messages when scrolling to the top
+  const handleScroll = useCallback((event: React.UIEvent<HTMLDivElement>) => {
+    const target = event.target as HTMLDivElement;
+    
+    // If scrolled to the top (or near), load more messages
+    if (target.scrollTop < 50 && !loadingMessages && activeChat) {
+      const oldestTime = oldestMessageTime[`${activeChatType}-${activeChat}`] || Date.now();
+      
+      setLoadingMessages(true);
+      // Simulate loading older messages
+      setTimeout(() => {
+        setLoadingMessages(false);
+        
+        // Update oldest message time to be even older (simulate pagination)
+        setOldestMessageTime(prev => ({
+          ...prev,
+          [`${activeChatType}-${activeChat}`]: oldestTime - 86400000 // 24 hours older
+        }));
+      }, 1000);
+    }
+  }, [activeChat, activeChatType, loadingMessages, oldestMessageTime]);
+  
   // Handle tab change
   const handleTabChange = (value: string) => {
+    // When switching tab types, leave the current room if we're in a group
+    if (chatType === 'group' && activeChat && value === 'private') {
+      leaveChat();
+    }
+    
     setChatType(value as 'private' | 'group');
     clearActiveChat(); // Clear active chat when switching tabs
+  };
+  
+  // Handle leaving chat
+  const leaveChat = () => {
+    if (activeChatType === 'group' && activeChat) {
+      leaveGroup(activeChat);
+    }
+    clearActiveChat();
   };
   
   // Filter messages based on the active chat and chat type
@@ -94,10 +181,13 @@ const ChatInterface: React.FC = () => {
     return false;
   });
   
+  // Sort messages by timestamp
+  const sortedMessages = [...filteredMessages].sort((a, b) => a.timestamp - b.timestamp);
+  
   // Auto scroll to bottom on new messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [filteredMessages]);
+  }, [sortedMessages.length]);
   
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
@@ -226,7 +316,27 @@ const ChatInterface: React.FC = () => {
   });
 
   return (
-    <div className="flex flex-col h-[500px] border rounded-md overflow-hidden">
+    <div className="flex flex-col h-full border rounded-md overflow-hidden">
+      <div className="flex justify-between items-center px-4 py-2 bg-secondary/30 border-b">
+        <h1 className="text-lg font-bold">ChopKhui</h1>
+        <div className="flex gap-2">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={toggleTheme} 
+            className="h-8 w-8 rounded-full"
+            aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+          >
+            {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          </Button>
+          
+          <Button variant="outline" size="sm" onClick={handleLogout} className="h-8">
+            <LogOut className="h-4 w-4 mr-1" />
+            Logout
+          </Button>
+        </div>
+      </div>
+      
       <Tabs 
         defaultValue="private" 
         className="w-full h-full flex flex-col"
@@ -420,7 +530,17 @@ const ChatInterface: React.FC = () => {
 
           {/* Chat Area */}
           <div className="flex-1 flex flex-col">
-            <ScrollArea className="flex-1 p-4">
+            <ScrollArea 
+              className="flex-1 p-4"
+              ref={scrollAreaRef}
+              onScroll={handleScroll}
+            >
+              {loadingMessages && (
+                <div className="flex justify-center py-3">
+                  <Loader className="h-5 w-5 animate-spin text-muted-foreground" />
+                </div>
+              )}
+              
               {activeChat ? (
                 <>
                   <div className="mb-4 pb-2 border-b flex justify-between items-center">
@@ -465,9 +585,9 @@ const ChatInterface: React.FC = () => {
                     </div>
                   </div>
                   
-                  {filteredMessages.length > 0 ? (
+                  {sortedMessages.length > 0 ? (
                     <div className="space-y-3">
-                      {filteredMessages.map((msg) => (
+                      {sortedMessages.map((msg) => (
                         <ChatMessage
                           key={msg.id}
                           message={msg}

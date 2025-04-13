@@ -1,12 +1,11 @@
 
 import React, { useEffect } from 'react';
 import Layout from '../components/layout/Layout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import ChatInterface from '@/components/ChatInterface';
 import { useAuthStore } from '@/state/authStore';
 import { useChatStore } from '@/state/store';
 import { useNavigate } from 'react-router-dom';
-import ChatClients from '@/components/ChatClients';
 
 const Index: React.FC = () => {
   const { isAuthenticated, currentUser } = useAuthStore();
@@ -29,21 +28,15 @@ const Index: React.FC = () => {
 
   return (
     <Layout>
-      <section className="section bg-background theme-transition">
-        <div className="container-fluid">
-          <div className="max-w-6xl mx-auto">
-            <Card>
-              <CardHeader>
-                <CardTitle> 
-                  <ChatClients /> </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ChatInterface />
-              </CardContent>
+      <div className="w-full h-screen overflow-hidden bg-background theme-transition">
+        <div className="container-fluid h-full py-4">
+          <div className="max-w-6xl mx-auto h-full">
+            <Card className="h-full overflow-hidden border-0 shadow-lg">
+              <ChatInterface />
             </Card>
           </div>
         </div>
-      </section>
+      </div>
     </Layout>
   );
 };
