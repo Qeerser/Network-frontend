@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useChatStore } from '@/state/store';
+import { Chat, useChatStore } from '@/state/store';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -60,7 +60,6 @@ const ChatInterface: React.FC = () => {
     deleteGroup,
     availableGroups,
     activeChat,
-    activeChatType,
     setActiveChat,
     clearActiveChat,
     clearChatMessages
@@ -88,9 +87,9 @@ const ChatInterface: React.FC = () => {
   // Set active chat when selected chat changes
   useEffect(() => {
     if (activeChat) {
-      setActiveChat(activeChat, chatType);
+      // setActiveChat();
       // Simulate fetching messages for the selected chat
-      fetchMessages(activeChat, chatType);
+      fetchMessages(activeChat.id, chatType);
     }
   }, [activeChat, chatType, setActiveChat]);
   
@@ -132,7 +131,7 @@ const ChatInterface: React.FC = () => {
     
     // If scrolled to the top (or near), load more messages
     if (target.scrollTop < 50 && !loadingMessages && activeChat) {
-      const oldestTime = oldestMessageTime[`${activeChatType}-${activeChat}`] || Date.now();
+      const oldestTime = oldestMessageTime[`${activeChat.type}-${activeChat.name}`] || Date.now();
       
       setLoadingMessages(true);
       // Simulate loading older messages
@@ -142,15 +141,16 @@ const ChatInterface: React.FC = () => {
         // Update oldest message time to be even older (simulate pagination)
         setOldestMessageTime(prev => ({
           ...prev,
-          [`${activeChatType}-${activeChat}`]: oldestTime - 86400000 // 24 hours older
+          [`${activeChat.type}-${activeChat.name}`]: oldestTime - 86400000 // 24 hours older
         }));
       }, 1000);
     }
-  }, [activeChat, activeChatType, loadingMessages, oldestMessageTime]);
+  }, [activeChat, activeChat, loadingMessages, oldestMessageTime]);
   
   // Handle tab change
   const handleTabChange = (value: string) => {
     // When switching tab types, leave the current room if we're in a group
+    console.log('Tab changed to:', value);
     if (chatType === 'group' && activeChat && value === 'private') {
       leaveChat();
     }
@@ -161,7 +161,7 @@ const ChatInterface: React.FC = () => {
   
   // Handle leaving chat
   const leaveChat = () => {
-    if (activeChatType === 'group' && activeChat) {
+    if (activeChat.type === 'group' && activeChat) {
       leaveGroup(activeChat);
     }
     clearActiveChat();
@@ -171,12 +171,12 @@ const ChatInterface: React.FC = () => {
   const filteredMessages = messages.filter(msg => {
     if (chatType === 'private' && activeChat) {
       return (
-        (msg.from === activeChat && msg.to === clientName) ||
-        (msg.from === clientName && msg.to === activeChat)
+        (msg.fromId === activeChat.id && msg.toId === clientName) ||
+        (msg.fromId === clientName && msg.toId === activeChat.id)
       );
     } else if (chatType === 'group' && activeChat) {
       // Group messages
-      return msg.to === activeChat && !msg.isPrivate;
+      return msg.toId === activeChat.id && !msg.isPrivate;
     }
     return false;
   });
@@ -194,7 +194,7 @@ const ChatInterface: React.FC = () => {
     
     if ((!messageText.trim() && !imageAttachment) || !activeChat) return;
     
-    sendMessage(messageText, activeChat, imageAttachment || undefined);
+    sendMessage(messageText, activeChat.name, activeChat.type === "private", activeChat.id, imageAttachment || undefined);
     setMessageText('');
     setImageAttachment(null);
     setShowEmojiPicker(false);
@@ -211,11 +211,11 @@ const ChatInterface: React.FC = () => {
     e.preventDefault();
     
     if (newGroupName.trim()) {
-      createGroup(newGroupName);
+      const newGroup = createGroup(newGroupName);
       setNewGroupName('');
       setShowNewGroupDialog(false);
       setChatType('group');
-      setActiveChat(newGroupName, 'group');
+      setActiveChat(newGroup);
       
       toast({
         title: "Group Created",
@@ -225,34 +225,34 @@ const ChatInterface: React.FC = () => {
     }
   };
   
-  const handleJoinGroup = (groupName: string) => {
-    joinGroup(groupName);
-    setActiveChat(groupName, 'group');
+  const handleJoinGroup = (group : Chat) => {
+    joinGroup(group);
+    setActiveChat(group);
     
     toast({
       title: "Joined Group",
-      description: `You have joined "${groupName}"`,
+      description: `You have joined "${group.name}"`,
       variant: "default",
     });
   };
   
-  const handleLeaveGroup = (groupName: string) => {
-    leaveGroup(groupName);
+  const handleLeaveGroup = (group : Chat) => {
+    leaveGroup(group);
     
     toast({
       title: "Left Group",
-      description: `You have left "${groupName}"`,
+      description: `You have left "${group.name}"`,
       variant: "default",
     });
   };
   
-  const handleDeleteGroup = (groupName: string) => {
-    const group = availableGroups.find(g => g.name === groupName);
-    if (group?.creator === clientName) {
-      deleteGroup(groupName);
+  const handleDeleteGroup = (group : Chat) => {
+    const targetGroup = availableGroups.find(g => g.name === group.name);
+    if (targetGroup?.creator === clientName) {
+      deleteGroup(group);
       toast({
         title: "Group Deleted",
-        description: `"${groupName}" has been deleted`,
+        description: `"${group.name}" has been deleted`,
         variant: "destructive",
       });
     } else {
@@ -297,13 +297,13 @@ const ChatInterface: React.FC = () => {
   };
   
   // Filter out the current user from the connected clients list
-  const otherClients = connectedClients.filter(client => client !== clientName);
+  const otherClients = connectedClients.filter(client => client.name !== clientName);
   
   // Sort users by last message interaction (for now just alphabetically)
-  const sortedOtherClients = [...otherClients].sort((a, b) => a.localeCompare(b));
+  const sortedOtherClients = [...otherClients].sort((a, b) => a.name.localeCompare(b.name));
   
   // Get list of offline users
-  const sortedOfflineClients = offlineClients ? [...offlineClients].sort((a, b) => a.localeCompare(b)) : [];
+  const sortedOfflineClients = offlineClients ? [...offlineClients].sort((a, b) => a.name.localeCompare(b.name)) : [];
   
   // Sort groups by last message timestamp if available
   const sortedGroups = [...availableGroups].sort((a, b) => {
@@ -390,14 +390,14 @@ const ChatInterface: React.FC = () => {
                       {sortedOtherClients.length > 0 ? (
                         sortedOtherClients.map((client) => (
                           <li 
-                            key={client}
-                            onClick={() => setActiveChat(client, 'private')}
+                            key={client.id}
+                            onClick={() => setActiveChat({id: client.id, name: client.name, type :'private'})}
                             className={`p-2 rounded-md cursor-pointer flex items-center gap-2 ${
                               activeChat === client && chatType === 'private' ? 'bg-primary/10' : 'hover:bg-secondary/20'
                             }`}
                           >
                             <span className="h-2 w-2 rounded-full bg-green-500"></span>
-                            <span>{client}</span>
+                            <span>{client.name}</span>
                           </li>
                         ))
                       ) : (
@@ -413,14 +413,14 @@ const ChatInterface: React.FC = () => {
                       <ul className="space-y-2">
                         {sortedOfflineClients.map((client) => (
                           <li 
-                            key={client}
-                            onClick={() => setActiveChat(client, 'private')}
+                            key={client.id}
+                            onClick={() => setActiveChat({id: client.id, name: client.name, type :'private'})}
                             className={`p-2 rounded-md cursor-pointer flex items-center gap-2 opacity-60 ${
                               activeChat === client && chatType === 'private' ? 'bg-primary/10' : 'hover:bg-secondary/20'
                             }`}
                           >
                             <span className="h-2 w-2 rounded-full bg-gray-400"></span>
-                            <span>{client}</span>
+                            <span>{client.name}</span>
                           </li>
                         ))}
                       </ul>
@@ -436,13 +436,13 @@ const ChatInterface: React.FC = () => {
                       <li 
                         key={group.name}
                         onClick={() => {
-                          setActiveChat(group.name, 'group');
+                          setActiveChat({id: group.id, name: group.name, type :'group'});
                           if (!group.members.includes(clientName)) {
-                            handleJoinGroup(group.name);
+                            handleJoinGroup({id: group.id, name: group.name, type :'group'});
                           }
                         }}
                         className={`p-2 rounded-md cursor-pointer ${
-                          activeChat === group.name && chatType === 'group' ? 'bg-primary/10' : 'hover:bg-secondary/20'
+                          activeChat.name === group.name && chatType === 'group' ? 'bg-primary/10' : 'hover:bg-secondary/20'
                         }`}
                       >
                         <div className="flex justify-between items-center">
@@ -459,7 +459,7 @@ const ChatInterface: React.FC = () => {
                               {group.members.includes(clientName) ? (
                                 <DropdownMenuItem onClick={(e) => {
                                   e.stopPropagation();
-                                  handleLeaveGroup(group.name);
+                                  handleLeaveGroup({id: group.id, name: group.name, type :'group'});
                                 }}>
                                   <LogOut className="mr-2 h-4 w-4" />
                                   Leave Group
@@ -467,7 +467,7 @@ const ChatInterface: React.FC = () => {
                               ) : (
                                 <DropdownMenuItem onClick={(e) => {
                                   e.stopPropagation();
-                                  handleJoinGroup(group.name);
+                                  handleJoinGroup({id: group.id, name: group.name, type :'group'});
                                 }}>
                                   <UserPlus className="mr-2 h-4 w-4" />
                                   Join Group
@@ -478,7 +478,7 @@ const ChatInterface: React.FC = () => {
                                 <DropdownMenuItem 
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    handleDeleteGroup(group.name);
+                                    handleDeleteGroup({id: group.id, name: group.name, type :'group'});
                                   }}
                                   className="text-destructive"
                                 >
@@ -528,11 +528,11 @@ const ChatInterface: React.FC = () => {
                   <div className="mb-4 pb-2 border-b flex justify-between items-center">
                     <div>
                       <h3 className="font-semibold">
-                        {chatType === 'private' ? `Chat with ${activeChat}` : activeChat}
+                        {chatType === 'private' ? `Chat with ${activeChat.name}` : activeChat.name}
                       </h3>
                       {chatType === 'group' && (
                         <p className="text-xs text-muted-foreground">
-                          {availableGroups.find(g => g.name === activeChat)?.members.join(', ')}
+                          {availableGroups.find(g => g.id === activeChat.id)?.members.join(', ')}
                         </p>
                       )}
                     </div>
@@ -552,7 +552,7 @@ const ChatInterface: React.FC = () => {
                           </Button>
                           
                           {/* Delete group button (if creator) */}
-                          {availableGroups.find(g => g.name === activeChat)?.creator === clientName && (
+                          {availableGroups.find(g => g.id === activeChat.id)?.creator === clientName && (
                             <Button 
                               variant="destructive" 
                               size="sm"
