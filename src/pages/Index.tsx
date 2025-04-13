@@ -1,8 +1,7 @@
 
 import React from 'react';
 import Layout from '../components/layout/Layout';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import ChatClients from '@/components/ChatClients';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import ChatInterface from '@/components/ChatInterface';
 
 const Index: React.FC = () => {
@@ -10,26 +9,10 @@ const Index: React.FC = () => {
     <Layout>
       <section className="section bg-background theme-transition">
         <div className="container-fluid">
-          
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
-            <Card className="lg:col-span-1">
+          <div className="max-w-6xl mx-auto">
+            <Card>
               <CardHeader>
-                <CardTitle>Online Users</CardTitle>
-                <CardDescription>
-                  See who's connected and set your name
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ChatClients />
-              </CardContent>
-            </Card>
-            
-            <Card className="lg:col-span-2">
-              <CardHeader>
-                <CardTitle>Chat</CardTitle>
-                <CardDescription>
-                  Private messages and group conversations
-                </CardDescription>
+                <CardTitle>Pixel Chat</CardTitle>
               </CardHeader>
               <CardContent>
                 <ChatInterface />

@@ -5,7 +5,19 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { PlusCircle, Send, UserPlus, Users, Image, Smile, X } from 'lucide-react';
+import { 
+  PlusCircle, 
+  Send, 
+  UserPlus, 
+  Users, 
+  Image, 
+  Smile, 
+  X, 
+  Trash2, 
+  LogOut,
+  UserX,
+  RefreshCw
+} from 'lucide-react';
 import ChatMessage from './ChatMessage';
 import {
   Dialog,
@@ -28,6 +40,7 @@ const ChatInterface: React.FC = () => {
   const { 
     clientName,
     connectedClients,
+    offlineClients,
     messages,
     sendMessage,
     editMessage,
@@ -35,11 +48,16 @@ const ChatInterface: React.FC = () => {
     joinGroup,
     createGroup,
     leaveGroup,
+    deleteGroup,
     availableGroups,
+    activeChat,
+    activeChatType,
+    setActiveChat,
+    clearActiveChat,
+    clearChatMessages
   } = useChatStore();
   
   const [messageText, setMessageText] = useState('');
-  const [selectedChat, setSelectedChat] = useState<string | null>(null);
   const [chatType, setChatType] = useState<'private' | 'group'>('private');
   const [newGroupName, setNewGroupName] = useState('');
   const [showNewGroupDialog, setShowNewGroupDialog] = useState(false);
@@ -49,17 +67,31 @@ const ChatInterface: React.FC = () => {
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
-  // Filter messages based on the selected chat and chat type
-  const filteredMessages = messages.filter(msg => {
-    if (chatType === 'private') {
-      return (
-        (msg.from === selectedChat && msg.to === clientName) ||
-        (msg.from === clientName && msg.to === selectedChat)
-      );
-    } else {
-      // Group messages
-      return msg.to === selectedChat && !msg.isPrivate;
+  // Set active chat when selected chat changes
+  useEffect(() => {
+    if (activeChat) {
+      setActiveChat(activeChat, chatType);
     }
+  }, [activeChat, chatType, setActiveChat]);
+  
+  // Handle tab change
+  const handleTabChange = (value: string) => {
+    setChatType(value as 'private' | 'group');
+    clearActiveChat(); // Clear active chat when switching tabs
+  };
+  
+  // Filter messages based on the active chat and chat type
+  const filteredMessages = messages.filter(msg => {
+    if (chatType === 'private' && activeChat) {
+      return (
+        (msg.from === activeChat && msg.to === clientName) ||
+        (msg.from === clientName && msg.to === activeChat)
+      );
+    } else if (chatType === 'group' && activeChat) {
+      // Group messages
+      return msg.to === activeChat && !msg.isPrivate;
+    }
+    return false;
   });
   
   // Auto scroll to bottom on new messages
@@ -70,9 +102,9 @@ const ChatInterface: React.FC = () => {
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if ((!messageText.trim() && !imageAttachment) || !selectedChat) return;
+    if ((!messageText.trim() && !imageAttachment) || !activeChat) return;
     
-    sendMessage(messageText, selectedChat, imageAttachment || undefined);
+    sendMessage(messageText, activeChat, imageAttachment || undefined);
     setMessageText('');
     setImageAttachment(null);
     setShowEmojiPicker(false);
@@ -80,7 +112,7 @@ const ChatInterface: React.FC = () => {
     // Show toast for sent message
     toast({
       title: "Message Sent",
-      description: `To: ${selectedChat}`,
+      description: `To: ${activeChat}`,
       duration: 2000,
     });
   };
@@ -93,6 +125,7 @@ const ChatInterface: React.FC = () => {
       setNewGroupName('');
       setShowNewGroupDialog(false);
       setChatType('group');
+      setActiveChat(newGroupName, 'group');
       
       toast({
         title: "Group Created",
@@ -104,7 +137,7 @@ const ChatInterface: React.FC = () => {
   
   const handleJoinGroup = (groupName: string) => {
     joinGroup(groupName);
-    setSelectedChat(groupName);
+    setActiveChat(groupName, 'group');
     
     toast({
       title: "Joined Group",
@@ -115,13 +148,37 @@ const ChatInterface: React.FC = () => {
   
   const handleLeaveGroup = (groupName: string) => {
     leaveGroup(groupName);
-    if (selectedChat === groupName) {
-      setSelectedChat(null);
-    }
     
     toast({
       title: "Left Group",
       description: `You have left "${groupName}"`,
+      variant: "default",
+    });
+  };
+  
+  const handleDeleteGroup = (groupName: string) => {
+    const group = availableGroups.find(g => g.name === groupName);
+    if (group?.creator === clientName) {
+      deleteGroup(groupName);
+      toast({
+        title: "Group Deleted",
+        description: `"${groupName}" has been deleted`,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Permission Denied",
+        description: "You can only delete groups you created",
+        variant: "destructive",
+      });
+    }
+  };
+  
+  const handleClearChat = () => {
+    clearChatMessages();
+    toast({
+      title: "Chat Cleared",
+      description: "All messages have been cleared",
       variant: "default",
     });
   };
@@ -151,13 +208,29 @@ const ChatInterface: React.FC = () => {
   
   // Filter out the current user from the connected clients list
   const otherClients = connectedClients.filter(client => client !== clientName);
+  
+  // Sort users by last message interaction (for now just alphabetically)
+  const sortedOtherClients = [...otherClients].sort((a, b) => a.localeCompare(b));
+  
+  // Get list of offline users
+  const sortedOfflineClients = offlineClients ? [...offlineClients].sort((a, b) => a.localeCompare(b)) : [];
+  
+  // Sort groups by last message timestamp if available
+  const sortedGroups = [...availableGroups].sort((a, b) => {
+    if (a.lastMessage && b.lastMessage) {
+      return b.lastMessage.timestamp - a.lastMessage.timestamp;
+    }
+    if (a.lastMessage) return -1;
+    if (b.lastMessage) return 1;
+    return a.name.localeCompare(b.name);
+  });
 
   return (
     <div className="flex flex-col h-[500px] border rounded-md overflow-hidden">
       <Tabs 
         defaultValue="private" 
         className="w-full h-full flex flex-col"
-        onValueChange={(value) => setChatType(value as 'private' | 'group')}
+        onValueChange={handleTabChange}
       >
         <div className="border-b px-4">
           <TabsList className="grid w-full grid-cols-2">
@@ -203,66 +276,138 @@ const ChatInterface: React.FC = () => {
                   </DialogContent>
                 </Dialog>
               )}
+              
+              {/* Clear chat button */}
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="h-8 w-8 p-0"
+                onClick={handleClearChat}
+              >
+                <RefreshCw size={16} />
+              </Button>
             </div>
             
             <ScrollArea className="flex-1">
               <TabsContent value="private" className="m-0 h-full">
-                <ul className="space-y-2">
-                  {otherClients.length > 0 ? (
-                    otherClients.map((client) => (
-                      <li 
-                        key={client}
-                        onClick={() => setSelectedChat(client)}
-                        className={`p-2 rounded-md cursor-pointer ${
-                          selectedChat === client ? 'bg-primary/10' : 'hover:bg-secondary/20'
-                        }`}
-                      >
-                        {client}
-                      </li>
-                    ))
-                  ) : (
-                    <p className="text-muted-foreground text-sm">No other users online</p>
+                <div className="space-y-4">
+                  {/* Online users */}
+                  <div>
+                    <h4 className="text-xs uppercase font-bold text-muted-foreground mb-2">Online</h4>
+                    <ul className="space-y-2">
+                      {sortedOtherClients.length > 0 ? (
+                        sortedOtherClients.map((client) => (
+                          <li 
+                            key={client}
+                            onClick={() => setActiveChat(client, 'private')}
+                            className={`p-2 rounded-md cursor-pointer flex items-center gap-2 ${
+                              activeChat === client && chatType === 'private' ? 'bg-primary/10' : 'hover:bg-secondary/20'
+                            }`}
+                          >
+                            <span className="h-2 w-2 rounded-full bg-green-500"></span>
+                            <span>{client}</span>
+                          </li>
+                        ))
+                      ) : (
+                        <p className="text-muted-foreground text-sm">No other users online</p>
+                      )}
+                    </ul>
+                  </div>
+                  
+                  {/* Offline users */}
+                  {sortedOfflineClients.length > 0 && (
+                    <div>
+                      <h4 className="text-xs uppercase font-bold text-muted-foreground mb-2">Offline</h4>
+                      <ul className="space-y-2">
+                        {sortedOfflineClients.map((client) => (
+                          <li 
+                            key={client}
+                            onClick={() => setActiveChat(client, 'private')}
+                            className={`p-2 rounded-md cursor-pointer flex items-center gap-2 opacity-60 ${
+                              activeChat === client && chatType === 'private' ? 'bg-primary/10' : 'hover:bg-secondary/20'
+                            }`}
+                          >
+                            <span className="h-2 w-2 rounded-full bg-gray-400"></span>
+                            <span>{client}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
                   )}
-                </ul>
+                </div>
               </TabsContent>
               
               <TabsContent value="group" className="m-0 h-full">
                 <ul className="space-y-2">
-                  {availableGroups.length > 0 ? (
-                    availableGroups.map((group) => (
+                  {sortedGroups.length > 0 ? (
+                    sortedGroups.map((group) => (
                       <li 
                         key={group.name}
                         onClick={() => {
-                          setSelectedChat(group.name);
+                          setActiveChat(group.name, 'group');
                           if (!group.members.includes(clientName)) {
                             handleJoinGroup(group.name);
                           }
                         }}
-                        className={`p-2 rounded-md cursor-pointer flex justify-between items-center ${
-                          selectedChat === group.name ? 'bg-primary/10' : 'hover:bg-secondary/20'
+                        className={`p-2 rounded-md cursor-pointer ${
+                          activeChat === group.name && chatType === 'group' ? 'bg-primary/10' : 'hover:bg-secondary/20'
                         }`}
                       >
-                        <span>{group.name}</span>
+                        <div className="flex justify-between items-center">
+                          <span>{group.name}</span>
+                          
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                                <span className="sr-only">Open menu</span>
+                                <Users size={12} />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              {group.members.includes(clientName) ? (
+                                <DropdownMenuItem onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleLeaveGroup(group.name);
+                                }}>
+                                  <LogOut className="mr-2 h-4 w-4" />
+                                  Leave Group
+                                </DropdownMenuItem>
+                              ) : (
+                                <DropdownMenuItem onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleJoinGroup(group.name);
+                                }}>
+                                  <UserPlus className="mr-2 h-4 w-4" />
+                                  Join Group
+                                </DropdownMenuItem>
+                              )}
+                              
+                              {group.creator === clientName && (
+                                <DropdownMenuItem 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDeleteGroup(group.name);
+                                  }}
+                                  className="text-destructive"
+                                >
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  Delete Group
+                                </DropdownMenuItem>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
                         
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
-                              <span className="sr-only">Open menu</span>
-                              <Users size={12} />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            {group.members.includes(clientName) ? (
-                              <DropdownMenuItem onClick={() => handleLeaveGroup(group.name)}>
-                                Leave Group
-                              </DropdownMenuItem>
-                            ) : (
-                              <DropdownMenuItem onClick={() => handleJoinGroup(group.name)}>
-                                Join Group
-                              </DropdownMenuItem>
-                            )}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                        {/* Last message preview */}
+                        {group.lastMessage && (
+                          <p className="text-xs text-muted-foreground mt-1 truncate">
+                            {group.lastMessage.content}
+                          </p>
+                        )}
+                        
+                        <div className="text-xs text-muted-foreground mt-1">
+                          {group.members.length} members
+                        </div>
                       </li>
                     ))
                   ) : (
@@ -276,17 +421,48 @@ const ChatInterface: React.FC = () => {
           {/* Chat Area */}
           <div className="flex-1 flex flex-col">
             <ScrollArea className="flex-1 p-4">
-              {selectedChat ? (
+              {activeChat ? (
                 <>
-                  <div className="mb-4 pb-2 border-b">
-                    <h3 className="font-semibold">
-                      {chatType === 'private' ? `Chat with ${selectedChat}` : selectedChat}
-                    </h3>
-                    {chatType === 'group' && (
-                      <p className="text-xs text-muted-foreground">
-                        {availableGroups.find(g => g.name === selectedChat)?.members.join(', ')}
-                      </p>
-                    )}
+                  <div className="mb-4 pb-2 border-b flex justify-between items-center">
+                    <div>
+                      <h3 className="font-semibold">
+                        {chatType === 'private' ? `Chat with ${activeChat}` : activeChat}
+                      </h3>
+                      {chatType === 'group' && (
+                        <p className="text-xs text-muted-foreground">
+                          {availableGroups.find(g => g.name === activeChat)?.members.join(', ')}
+                        </p>
+                      )}
+                    </div>
+                    
+                    {/* Action buttons */}
+                    <div className="flex gap-2">
+                      {chatType === 'group' && (
+                        <>
+                          {/* Leave group button */}
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleLeaveGroup(activeChat)}
+                            className="h-8"
+                          >
+                            <LogOut size={14} className="mr-1" /> Leave
+                          </Button>
+                          
+                          {/* Delete group button (if creator) */}
+                          {availableGroups.find(g => g.name === activeChat)?.creator === clientName && (
+                            <Button 
+                              variant="destructive" 
+                              size="sm"
+                              onClick={() => handleDeleteGroup(activeChat)}
+                              className="h-8"
+                            >
+                              <Trash2 size={14} className="mr-1" /> Delete
+                            </Button>
+                          )}
+                        </>
+                      )}
+                    </div>
                   </div>
                   
                   {filteredMessages.length > 0 ? (
@@ -306,8 +482,8 @@ const ChatInterface: React.FC = () => {
                     <div className="h-full flex items-center justify-center">
                       <p className="text-muted-foreground text-center">
                         {chatType === 'private' 
-                          ? `Start a conversation with ${selectedChat}` 
-                          : `Start chatting in ${selectedChat}`}
+                          ? `Start a conversation with ${activeChat}` 
+                          : `Start chatting in ${activeChat}`}
                       </p>
                     </div>
                   )}
@@ -323,7 +499,7 @@ const ChatInterface: React.FC = () => {
               )}
             </ScrollArea>
             
-            {selectedChat && (
+            {activeChat && (
               <div className="p-4 border-t">
                 {/* Image preview */}
                 {imageAttachment && (
@@ -364,7 +540,7 @@ const ChatInterface: React.FC = () => {
                   <Input
                     value={messageText}
                     onChange={(e) => setMessageText(e.target.value)}
-                    placeholder={`Message ${chatType === 'private' ? selectedChat : 'group'}`}
+                    placeholder={`Message ${chatType === 'private' ? activeChat : 'group'}`}
                     className="flex-1"
                   />
                   

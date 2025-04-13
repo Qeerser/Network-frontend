@@ -47,6 +47,12 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
     setEditedContent(message.content);
     setIsEditing(false);
   };
+  
+  const handleReaction = (reaction: string) => {
+    if (onReactMessage) {
+      onReactMessage(message.id, reaction);
+    }
+  };
 
   return (
     <div className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'}`}>
@@ -99,17 +105,14 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
               )}
             </p>
             
-            {/* Message reactions display */}
-            {message.reactions && message.reactions.length > 0 && (
-              <div className="flex flex-wrap gap-1 mt-2">
-                {message.reactions.map((reaction, index) => (
-                  <span 
-                    key={index} 
-                    className="inline-block bg-background/20 rounded px-1.5 py-0.5 text-xs"
-                  >
-                    {reaction}
-                  </span>
-                ))}
+            {/* Message reaction display - single emoji */}
+            {message.reactions && (
+              <div className="mt-2">
+                <span 
+                  className="inline-block bg-background/20 rounded px-1.5 py-0.5 text-xs"
+                >
+                  {message.reactions}
+                </span>
               </div>
             )}
             
@@ -123,7 +126,11 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
                 {onReactMessage && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm" className="h-6 w-6 p-0 opacity-70 hover:opacity-100">
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-6 w-6 p-0 opacity-70 hover:opacity-100"
+                      >
                         <Smile size={14} />
                       </Button>
                     </DropdownMenuTrigger>
@@ -131,7 +138,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
                       {EMOJI_REACTIONS.map(emoji => (
                         <DropdownMenuItem 
                           key={emoji} 
-                          onClick={() => onReactMessage(message.id, emoji)}
+                          onClick={() => handleReaction(emoji)}
                           className="px-2 py-1 flex justify-center items-center hover:bg-accent"
                         >
                           {emoji}
