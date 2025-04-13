@@ -23,20 +23,22 @@ const Header: React.FC = () => {
         </div>
         
         <div className="flex items-center space-x-2">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={toggleTheme} 
-            className="h-9 w-9 rounded-full"
-            aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
-          >
-            {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-          </Button>
+          <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={toggleTheme}
+                  className={`h-9 w-9 rounded-full `}
+                  aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+                  >
+                  {theme === 'dark' ? <Sun className="h-4 w-4 text-white" /> : <Moon className="h-4 w-4 text-black" />}
+                  </Button>
           
           {isAuthenticated ? (
             <>
         
-              <Button variant="outline" size="sm" onClick={handleLogout} className="hidden md:inline-flex">
+              <Button variant="outline" size="sm" onClick={handleLogout} 
+                className={` hidden md:inline-flex ${theme === 'dark' ? 'text-white' : 'text-black'}`}>
+                  
                 <LogOut className="h-4 w-4" />
               </Button>
             </>

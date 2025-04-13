@@ -11,6 +11,7 @@ import Auth from "./pages/Auth";
 import { useAuthStore } from "./state/authStore";
 import Login from "./pages/login";
 import Register from "./pages/register";
+import { ThemeProvider } from "./components/ThemeProvider";
 
 const queryClient = new QueryClient();
 
@@ -29,6 +30,7 @@ const App = () => {
 	return (
 		<QueryClientProvider client={queryClient}>
 			<TooltipProvider>
+				<ThemeProvider>
 				<Toaster />
 				<Sonner />
 				<BrowserRouter>
@@ -68,6 +70,7 @@ const App = () => {
 						<Route path="*" element={<NotFound />} />
 					</Routes>
 				</BrowserRouter>
+				</ThemeProvider>
 			</TooltipProvider>
 		</QueryClientProvider>
 	);

@@ -72,7 +72,7 @@ const Register: React.FC = () => {
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="absolute top-4 right-4">
         <Button variant="ghost" size="icon" onClick={toggleTheme} className="rounded-full">
-          {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+          {theme === 'dark' ? <Sun className="h-5 w-5 text-white" /> : <Moon className="h-5 w-5" />}
         </Button>
       </div>
       

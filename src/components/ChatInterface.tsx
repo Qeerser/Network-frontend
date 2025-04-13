@@ -324,7 +324,7 @@ const ChatInterface: React.FC = () => {
         className="w-full h-full flex flex-col"
         onValueChange={handleTabChange}
       >
-        <div className="border-b px-4">
+        <div className="border-b">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="private" className="flex items-center gap-2">
               <UserPlus size={16} /> Private Messages
