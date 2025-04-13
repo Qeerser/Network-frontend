@@ -6,6 +6,7 @@ import ChatInterface from '@/components/ChatInterface';
 import { useAuthStore } from '@/state/authStore';
 import { useChatStore } from '@/state/store';
 import { useNavigate } from 'react-router-dom';
+import ChatClients from '@/components/ChatClients';
 
 const Index: React.FC = () => {
   const { isAuthenticated, currentUser } = useAuthStore();
@@ -33,7 +34,8 @@ const Index: React.FC = () => {
           <div className="max-w-6xl mx-auto">
             <Card>
               <CardHeader>
-                <CardTitle>Pixel Chat</CardTitle>
+                <CardTitle> 
+                  <ChatClients /> </CardTitle>
               </CardHeader>
               <CardContent>
                 <ChatInterface />

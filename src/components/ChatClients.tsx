@@ -52,8 +52,11 @@ const ChatClients: React.FC = () => {
   };
 
   return (
-    <div className="space-y-4">
-      <div className="mb-6">
+    // <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          Pixel Chat
+        </div>
         <form onSubmit={handleSetName} className="flex gap-2">
           <Input
             value={nameInput}
@@ -66,8 +69,8 @@ const ChatClients: React.FC = () => {
           </Button>
         </form>
       </div>
-
-      <Tabs defaultValue="users">
+      );
+      {/* <Tabs defaultValue="users">
         <TabsList className="grid w-full grid-cols-2 mb-4">
           <TabsTrigger value="users" className="flex items-center gap-1">
             <User size={16} /> Users
@@ -189,9 +192,9 @@ const ChatClients: React.FC = () => {
             </ScrollArea>
           </div>
         </TabsContent>
-      </Tabs>
-    </div>
-  );
+      </Tabs> */}
+    // </div>
+  
 };
 
 export default ChatClients;
