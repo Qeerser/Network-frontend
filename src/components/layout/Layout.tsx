@@ -1,6 +1,6 @@
+
 import React from "react";
 import { ThemeProvider } from "../ThemeProvider";
-import Header from "./Header";
 
 interface LayoutProps {
 	children: React.ReactNode;
@@ -9,9 +9,8 @@ interface LayoutProps {
 const Layout: React.FC<LayoutProps> = ({ children }) => {
 	return (
 		<ThemeProvider>
-			<div className="flex flex-col min-h-screen overflow-hidden bg-background">
-				<Header />
-				<main className="flex-grow">{children}</main>
+			<div className="flex flex-col min-h-screen bg-background">
+				{children}
 			</div>
 		</ThemeProvider>
 	);

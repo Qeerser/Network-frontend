@@ -31,6 +31,8 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       setThemeState(storedTheme);
     } else if (prefersDark) {
       setThemeState('dark');
+    } else {
+      setThemeState('light');
     }
   }, []);
 

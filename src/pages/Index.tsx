@@ -1,7 +1,7 @@
 
 import React, { useEffect } from 'react';
 import Layout from '../components/layout/Layout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import ChatInterface from '@/components/ChatInterface';
 import { useAuthStore } from '@/state/authStore';
 import { useChatStore } from '@/state/store';
@@ -29,18 +29,18 @@ const Index: React.FC = () => {
 
   return (
     <Layout>
-      <div className=" w-full h-screen overflow-hidden bg-background theme-transition">
-        <div className="container-fluid h-full py-4">
-          <div className="max-w-6xl mx-auto h-full">
-            <Card className="flex flex-col h-full overflow-hidden shadow-lg">
-              <CardHeader>
-                <CardTitle> 
-                  <ChatClients /> 
-                </CardTitle>
-              </CardHeader >
-                <CardContent className="flex-1 overflow-hidden">
+      <div className="fixed inset-0 bg-background theme-transition">
+        <div className="h-full flex flex-col">
+          <div className="flex-grow overflow-hidden">
+            <Card className="h-full border-0 shadow-none rounded-none">
+              <CardContent className="p-0 h-full flex flex-col">
+                <div className="border-b p-4">
+                  <ChatClients />
+                </div>
+                <div className="flex-grow overflow-hidden">
                   <ChatInterface />
-                </CardContent>
+                </div>
+              </CardContent>
             </Card>
           </div>
         </div>
