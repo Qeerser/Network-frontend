@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, act } from 'react';
 import { Chat, useChatStore } from '@/state/store';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -66,7 +66,7 @@ const ChatInterface: React.FC = () => {
   } = useChatStore();
   
   const [messageText, setMessageText] = useState('');
-  const [chatType, setChatType] = useState<'private' | 'group'>('private');
+  const [chatType, setChatType] = useState<'private' | 'group'>('group');
   const [newGroupName, setNewGroupName] = useState('');
   const [showNewGroupDialog, setShowNewGroupDialog] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -83,18 +83,7 @@ const ChatInterface: React.FC = () => {
     logout();
     navigate('/login');
   };
-  
-  // Set active chat when selected chat changes
-  useEffect(() => {
-    if (activeChat) {
-      // setActiveChat();
-      // Simulate fetching messages for the selected chat
-      fetchMessages(activeChat.id, chatType);
-    }
-  }, [activeChat, chatType, setActiveChat]);
-  
-  // Simulate fetching older messages
-  const fetchMessages = useCallback((chatId: string, type: 'private' | 'group') => {
+    const fetchMessages = useCallback((chatId: string, type: 'private' | 'group') => {
     setLoadingMessages(true);
     
     // Simulate API call with setTimeout
@@ -124,13 +113,24 @@ const ChatInterface: React.FC = () => {
       }
     }, 500); // Simulate network delay
   }, [messages, clientName]);
+  // Set active chat when selected chat changes
+  useEffect(() => {
+    if (activeChat.id) {
+      setActiveChat(activeChat);
+      // Simulate fetching messages for the selected chat
+      fetchMessages(activeChat.id, chatType);
+    }
+  }, [activeChat, chatType, setActiveChat, fetchMessages]);
+  
+  // Simulate fetching older messages
+
   
   // Load more messages when scrolling to the top
   const handleScroll = useCallback((event: React.UIEvent<HTMLDivElement>) => {
     const target = event.target as HTMLDivElement;
     
     // If scrolled to the top (or near), load more messages
-    if (target.scrollTop < 50 && !loadingMessages && activeChat) {
+    if (target.scrollTop < 50 && !loadingMessages && activeChat.id) {
       const oldestTime = oldestMessageTime[`${activeChat.type}-${activeChat.name}`] || Date.now();
       
       setLoadingMessages(true);
@@ -151,7 +151,7 @@ const ChatInterface: React.FC = () => {
   const handleTabChange = (value: string) => {
     // When switching tab types, leave the current room if we're in a group
     console.log('Tab changed to:', value);
-    if (chatType === 'group' && activeChat && value === 'private') {
+    if (chatType === 'group' && activeChat.id && value === 'private') {
       leaveChat();
     }
     
@@ -161,7 +161,7 @@ const ChatInterface: React.FC = () => {
   
   // Handle leaving chat
   const leaveChat = () => {
-    if (activeChat.type === 'group' && activeChat) {
+    if (activeChat.type === 'group' && activeChat.id) {
       leaveGroup(activeChat);
     }
     clearActiveChat();
@@ -169,12 +169,12 @@ const ChatInterface: React.FC = () => {
   
   // Filter messages based on the active chat and chat type
   const filteredMessages = messages.filter(msg => {
-    if (chatType === 'private' && activeChat) {
+    if (chatType === 'private' && activeChat.id) {
       return (
         (msg.fromId === activeChat.id && msg.toId === clientName) ||
         (msg.fromId === clientName && msg.toId === activeChat.id)
       );
-    } else if (chatType === 'group' && activeChat) {
+    } else if (chatType === 'group' && activeChat.id) {
       // Group messages
       return msg.toId === activeChat.id && !msg.isPrivate;
     }
@@ -192,7 +192,7 @@ const ChatInterface: React.FC = () => {
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if ((!messageText.trim() && !imageAttachment) || !activeChat) return;
+    if ((!messageText.trim() && !imageAttachment) || !activeChat.id) return;
     
     sendMessage(messageText, activeChat.name, activeChat.type === "private", activeChat.id, imageAttachment || undefined);
     setMessageText('');
@@ -320,7 +320,7 @@ const ChatInterface: React.FC = () => {
 
       
       <Tabs 
-        defaultValue="private" 
+        defaultValue="group" 
         className="w-full h-full flex flex-col"
         onValueChange={handleTabChange}
       >
@@ -393,7 +393,7 @@ const ChatInterface: React.FC = () => {
                             key={client.id}
                             onClick={() => setActiveChat({id: client.id, name: client.name, type :'private'})}
                             className={`p-2 rounded-md cursor-pointer flex items-center gap-2 ${
-                              activeChat === client && chatType === 'private' ? 'bg-primary/10' : 'hover:bg-secondary/20'
+                              activeChat.id === client.id && chatType === 'private' ? 'bg-primary/10' : 'hover:bg-secondary/20'
                             }`}
                           >
                             <span className="h-2 w-2 rounded-full bg-green-500"></span>
@@ -512,20 +512,9 @@ const ChatInterface: React.FC = () => {
 
           {/* Chat Area */}
           <div className="flex-1 flex flex-col">
-            <ScrollArea 
-              className="flex-1 p-4"
-              ref={scrollAreaRef}
-              onScroll={handleScroll}
-            >
-              {loadingMessages && (
-                <div className="flex justify-center py-3">
-                  <Loader className="h-5 w-5 animate-spin text-muted-foreground" />
-                </div>
-              )}
-              
-              {activeChat ? (
-                <>
-                  <div className="mb-4 pb-2 border-b flex justify-between items-center">
+            { activeChat.id ?(
+              <div className=" justify-center p-4 pb-0">
+              <div className=" pb-2 border-b flex justify-between items-center">
                     <div>
                       <h3 className="font-semibold">
                         {chatType === 'private' ? `Chat with ${activeChat.name}` : activeChat.name}
@@ -565,8 +554,28 @@ const ChatInterface: React.FC = () => {
                         </>
                       )}
                     </div>
-                  </div>
-                  
+                  </div></div>): (
+                <div className="h-full flex items-center justify-center">
+                  <p className="text-muted-foreground text-center">
+                    {chatType === 'private'
+                      ? 'Select a user to start chatting'
+                      : 'Select a group to join the conversation'}
+                  </p>
+                </div>
+              )}
+            
+            <ScrollArea 
+              className="flex-1 p-4 pt-0"
+              ref={scrollAreaRef}
+              onScroll={handleScroll}
+            >
+              {loadingMessages && (
+                <div className="flex justify-center py-3">
+                  <Loader className="h-5 w-5 animate-spin text-muted-foreground" />
+                </div>
+              )}
+              {activeChat.id && (
+                <div className=''>
                   {sortedMessages.length > 0 ? (
                     <div className="space-y-3">
                       {sortedMessages.map((msg) => (
@@ -589,19 +598,11 @@ const ChatInterface: React.FC = () => {
                       </p>
                     </div>
                   )}
-                </>
-              ) : (
-                <div className="h-full flex items-center justify-center">
-                  <p className="text-muted-foreground text-center">
-                    {chatType === 'private'
-                      ? 'Select a user to start chatting'
-                      : 'Select a group to join the conversation'}
-                  </p>
                 </div>
               )}
             </ScrollArea>
             
-            {activeChat && (
+            {activeChat.id && (
               <div className="p-4 border-t">
                 {/* Image preview */}
                 {imageAttachment && (
