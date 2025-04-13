@@ -27,7 +27,7 @@ const Header: React.FC = () => {
           </Link>
         </div>
         
-        <nav className="hidden md:flex items-center space-x-6 text-sm font-medium">
+        {/* <nav className="hidden md:flex items-center space-x-6 text-sm font-medium">
           <Link to="/" className="transition-colors hover:text-foreground/80">
             Home
           </Link>
@@ -37,7 +37,7 @@ const Header: React.FC = () => {
           <Link to="/contact" className="transition-colors hover:text-foreground/80">
             Contact
           </Link>
-        </nav>
+        </nav> */}
         
         <div className="flex items-center space-x-2">
           <Button 

@@ -16,7 +16,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         <main className="flex-grow">
           {children}
         </main>
-        <Footer />
+        {/* <Footer /> */}
       </div>
     </ThemeProvider>
   );

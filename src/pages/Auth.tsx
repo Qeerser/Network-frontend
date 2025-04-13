@@ -109,13 +109,13 @@ const Auth: React.FC = () => {
             <div 
               className="slider-transition" 
               style={{ 
-                transform: isLogin ? 'translateX(0)' : 'translateX(-100%)',
+                // transform: isLogin ? 'translateX(0)' : 'translateX(-100%)',
                 display: 'flex',
                 width: '200%'
               }}
             >
-              {/* Login Form */}
-              <div className="w-1/2 pr-4">
+              {isLogin ?
+             (<div className="w-1/2 pr-4">
                 <Form {...loginForm}>
                   <form onSubmit={loginForm.handleSubmit(handleLogin)} className="space-y-4">
                     <FormField
@@ -155,10 +155,10 @@ const Auth: React.FC = () => {
                     </Button>
                   </form>
                 </Form>
-              </div>
+              </div>)
               
-              {/* Register Form */}
-              <div className="w-1/2 pl-4">
+              
+              :(<div className="w-1/2 pl-4">
                 <Form {...registerForm}>
                   <form onSubmit={registerForm.handleSubmit(handleRegister)} className="space-y-4">
                     <FormField
@@ -212,7 +212,7 @@ const Auth: React.FC = () => {
                     </Button>
                   </form>
                 </Form>
-              </div>
+              </div>)}
             </div>
           </div>
           

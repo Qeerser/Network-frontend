@@ -10,10 +10,6 @@ const Index: React.FC = () => {
     <Layout>
       <section className="section bg-background theme-transition">
         <div className="container-fluid">
-          <div className="text-center mb-8">
-            <h2 className="mb-2">ChopKhui Chat</h2>
-            <p className="text-muted-foreground">Connect with others in real-time</p>
-          </div>
           
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
             <Card className="lg:col-span-1">
