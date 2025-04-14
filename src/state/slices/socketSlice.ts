@@ -25,6 +25,8 @@ export const createSocketSlice: StateCreator<
 > = (set, get, api) => ({
 	socket: null,
 	isConnected: false,
+	connectSocket: () => {}, // Keeping for backwards compatibility
+	disconnectSocket: () => {}, // Keeping for backwards compatibility
 
 	connect: () => {
 		if (get().socket?.connected) return;

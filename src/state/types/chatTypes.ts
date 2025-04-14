@@ -90,6 +90,7 @@ export interface ChatState {
 
 	// Socket state
 	socket: Socket | null;
-	connectSocket: () => void;
-	disconnectSocket: () => void;
+	isConnected: boolean;
+	connect: () => void;
+	disconnect: () => void;
 }

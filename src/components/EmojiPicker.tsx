@@ -3,6 +3,7 @@ import React from 'react';
 
 interface EmojiPickerProps {
   onEmojiSelect: (emoji: string) => void;
+  onClose?: () => void;
 }
 
 const EMOJI_CATEGORIES = {
@@ -13,8 +14,15 @@ const EMOJI_CATEGORIES = {
   'Travel & Places': ['🚗', '🚕', '🚙', '🚌', '🚎', '🏎️', '🚓', '🚑', '🚒', '🚐', '🚚', '🚛', '🚜', '🛴', '🚲', '🛵'],
 };
 
-const EmojiPicker: React.FC<EmojiPickerProps> = ({ onEmojiSelect }) => {
+const EmojiPicker: React.FC<EmojiPickerProps> = ({ onEmojiSelect, onClose }) => {
   const [activeCategory, setActiveCategory] = React.useState<string>(Object.keys(EMOJI_CATEGORIES)[0]);
+
+  const handleEmojiSelect = (emoji: string) => {
+    onEmojiSelect(emoji);
+    if (onClose) {
+      onClose();
+    }
+  };
 
   return (
     <div className="bg-background border rounded-lg shadow-[var(--pixel-shadow)] p-2 max-h-[200px] overflow-hidden">
@@ -38,7 +46,7 @@ const EmojiPicker: React.FC<EmojiPickerProps> = ({ onEmojiSelect }) => {
         {EMOJI_CATEGORIES[activeCategory as keyof typeof EMOJI_CATEGORIES].map((emoji) => (
           <button
             key={emoji}
-            onClick={() => onEmojiSelect(emoji)}
+            onClick={() => handleEmojiSelect(emoji)}
             className="hover:bg-accent rounded p-1 text-lg"
           >
             {emoji}

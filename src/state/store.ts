@@ -11,7 +11,8 @@ import { createSocketSlice } from "./slices/socketSlice";
 
 export type { ChatMessage, ChatGroup, Client, Chat } from "./types/chatTypes";
 
-export const useChatStore = create<ChatState>((set, get, api) => ({
+export const useChatStore = create<ChatState>()((set, get, api) => ({
+	// Include all slices to implement the full ChatState interface
 	...createClientSlice(set, get, api),
 	...createChatSlice(set, get, api),
 	...createGroupSlice(set, get, api),

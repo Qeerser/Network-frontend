@@ -117,7 +117,10 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
             
             {showEmojiPicker && (
               <div className="absolute bottom-full mb-2 z-10">
-                <EmojiPicker onSelect={handleReaction} onClose={() => setShowEmojiPicker(false)} />
+                <EmojiPicker 
+                  onEmojiSelect={handleReaction} 
+                  onClose={() => setShowEmojiPicker(false)} 
+                />
               </div>
             )}
           </div>
