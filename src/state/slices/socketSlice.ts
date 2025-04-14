@@ -25,8 +25,6 @@ export const createSocketSlice: StateCreator<
 > = (set, get, api) => ({
 	socket: null,
 	isConnected: false,
-	connectSocket: () => {}, // Keeping for backwards compatibility
-	disconnectSocket: () => {}, // Keeping for backwards compatibility
 
 	connect: () => {
 		if (get().socket?.connected) return;
@@ -48,7 +46,7 @@ export const createSocketSlice: StateCreator<
 
 		socket.on("connect", () => {
 			console.log("Connected to socket server");
-			set({ isConnected: true });
+			set(() => ({ isConnected: true }));
 
 			const { clientName, clientId } = get();
 			if (clientName && clientId) {
@@ -58,7 +56,7 @@ export const createSocketSlice: StateCreator<
 
 		socket.on("disconnect", () => {
 			console.log("Disconnected from socket server");
-			set({ isConnected: false });
+			set(() => ({ isConnected: false }));
 		});
 
 		socket.on("clients", (clients: Client[]) => {
@@ -101,6 +99,7 @@ export const createSocketSlice: StateCreator<
 												: message.content,
 										timestamp: message.timestamp,
 									},
+									lastMessageSender: message.from
 							  }
 							: group
 					),
@@ -149,14 +148,14 @@ export const createSocketSlice: StateCreator<
 			console.log(`Received event: ${event}`, args);
 		});
 
-		set({ socket });
+		set(() => ({ socket }));
 	},
 
 	disconnect: () => {
 		const { socket } = get();
 		if (socket) {
 			socket.disconnect();
-			set({ socket: null, isConnected: false });
+			set(() => ({ socket: null, isConnected: false }));
 		}
 	},
 });

@@ -3,26 +3,18 @@ import React, { useEffect, useState } from 'react';
 import { useChatStore } from '@/state/store';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Users, User, Plus } from 'lucide-react';
 
 const ChatClients: React.FC = () => {
   const { 
     clientName, 
-    setClientName, 
-    connectedClients, 
+    setClientName,
     connect,
     disconnect,
-    isConnected,
-    availableGroups,
-    joinGroup,
-    createGroup
+    isConnected
   } = useChatStore();
   
   const [nameInput, setNameInput] = useState(clientName);
   const [newGroupName, setNewGroupName] = useState('');
-  const [showNewGroupInput, setShowNewGroupInput] = useState(false);
 
   useEffect(() => {
     // Connect to socket when component mounts
@@ -38,16 +30,6 @@ const ChatClients: React.FC = () => {
     e.preventDefault();
     if (nameInput.trim()) {
       setClientName(nameInput.trim());
-      setShowNewGroupInput(false);
-    }
-  };
-
-  const handleCreateGroup = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (newGroupName.trim()) {
-      createGroup(newGroupName.trim());
-      setNewGroupName('');
-      setShowNewGroupInput(false);
     }
   };
 

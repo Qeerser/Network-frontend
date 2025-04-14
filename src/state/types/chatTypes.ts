@@ -93,4 +93,8 @@ export interface ChatState {
 	isConnected: boolean;
 	connect: () => void;
 	disconnect: () => void;
+	
+	// For backward compatibility
+	connectSocket: () => void;
+	disconnectSocket: () => void;
 }

@@ -96,8 +96,8 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
         </div>
       </div>
       
-      {/* Message actions */}
-      <div className={`absolute top-0 ${isOwnMessage ? 'left-0 -translate-x-full' : 'right-0 translate-x-full'} opacity-0 group-hover:opacity-100 flex gap-1 transition-opacity`}>
+      {/* Message actions - Moved closer to the message */}
+      <div className={`absolute ${isOwnMessage ? 'left-[-30px] top-1' : 'right-[-30px] top-1'} opacity-0 group-hover:opacity-100 flex flex-col gap-1 transition-opacity`}>
         {onEditMessage && isOwnMessage && (
           <button 
             onClick={() => setIsEditing(true)}
@@ -116,7 +116,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
             </button>
             
             {showEmojiPicker && (
-              <div className="absolute bottom-full mb-2 z-10">
+              <div className={`absolute z-10 ${isOwnMessage ? 'left-6' : 'right-6'} top-0`}>
                 <EmojiPicker 
                   onEmojiSelect={handleReaction} 
                   onClose={() => setShowEmojiPicker(false)} 
