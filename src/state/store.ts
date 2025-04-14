@@ -1,3 +1,4 @@
+
 import { create } from "zustand";
 import { io, Socket } from "socket.io-client";
 import { v4 as uuidv4 } from "uuid";
@@ -82,6 +83,9 @@ interface ChatState {
 	hasMoreMessages: boolean;
 	oldestMessageTimestamp: Record<string, number>;
 	setOldestMessageTimestamp: (chatId: string, timestamp: number) => void;
+
+	// Add the missing fetchMessages function to the interface
+	fetchMessages: (target: string, type: "private" | "group", limit?: number, before?: number) => void;
 
 	socket: Socket | null;
 	isConnected: boolean;
