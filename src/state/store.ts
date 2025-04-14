@@ -68,6 +68,8 @@ interface ChatState {
 
 	// Active chat
 	activeChat: Chat;
+	fetchedChats: Record<string, boolean>,
+	setFetchedChats : (chatId: string, fetched: boolean) => void;
 	setActiveChat: (chat: Chat) => void;
 	clearActiveChat: () => void;
 
@@ -128,6 +130,15 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
 	// Active chat state
 	activeChat: { id: "", name: "", type: null },
+	fetchedChats: {},
+	setFetchedChats: (chatId: string, fetched: boolean) => {
+		set((state) => ({
+			fetchedChats: {
+				...state.fetchedChats,
+				[chatId]: fetched,
+			},
+		}));
+	},
 	setActiveChat: (chat: Chat) => {
 		set({ activeChat: chat });
 	},
@@ -140,7 +151,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
 	createGroup: (name: string): Chat => {
 		const { socket, clientName, clientId, availableGroups } = get();
 		const groupId = uuidv4();
-		
+		set({fetchedChats: {...get().fetchedChats, [`group-${groupId}`]: true}});
 		// Check if group already exists
 		if (availableGroups.some((group) => group.name === name)) {
 			console.warn(`Group ${name} already exists`);
@@ -163,12 +174,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
 		// Emit to server if connected
 		if (socket && socket.connected) {
-			socket.emit("createGroup", { 
-				name, 
-				groupId, 
-				creator: clientName, 
-				creatorId: clientId 
-			});
+			socket.emit("createGroup", newGroup);
 		}
 		
 		return { id: groupId, name, type: "group" };
@@ -257,10 +263,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
 		// Emit to server
 		if (socket && socket.connected) {
 			socket.emit("deleteGroup", {
-				groupName: targetGroup.name,
 				groupId: targetGroup.id,
-				client: clientName,
-				clientId,
+				client: clientId,
 			});
 		}
 	},

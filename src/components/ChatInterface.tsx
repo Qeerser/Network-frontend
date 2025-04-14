@@ -56,6 +56,8 @@ const ChatInterface: React.FC = () => {
 		clearActiveChat,
 		clearChatMessages,
 		fetchMessages,
+		fetchedChats,
+		setFetchedChats,
 		isLoadingMessages,
 		oldestMessageTimestamp,
 	} = useChatStore();
@@ -66,7 +68,6 @@ const ChatInterface: React.FC = () => {
 	const [showNewGroupDialog, setShowNewGroupDialog] = useState(false);
 	const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 	const [imageAttachment, setImageAttachment] = useState<string | null>(null);
-	const [fetchedChats, setFetchedChats] = useState<Record<string, boolean>>({});
 	
 	const imageInputRef = useRef<HTMLInputElement>(null);
 	const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -96,10 +97,7 @@ const ChatInterface: React.FC = () => {
 		if (activeChat.id) {
 			// Only fetch messages if we haven't already for this chat
 			if (!fetchedChats[`${activeChat.type}-${activeChat.id}`]) {
-				setFetchedChats(prev => ({
-					...prev,
-					[`${activeChat.type}-${activeChat.id}`]: true
-				}));
+				setFetchedChats(`${activeChat.type}-${activeChat.id}`, true);
 				
 				console.log(`Fetching messages for ${activeChat.type}:${activeChat.id}`);
 				fetchMessages(activeChat.id, activeChat.type, 15);
@@ -183,6 +181,7 @@ const ChatInterface: React.FC = () => {
 
 		if (newGroupName.trim()) {
 			const newGroup = createGroup(newGroupName);
+			
 			setNewGroupName("");
 			setShowNewGroupDialog(false);
 			setChatType("group");
@@ -573,7 +572,7 @@ const ChatInterface: React.FC = () => {
 							</div>
 						)}
 
-						<ScrollArea className="flex-1 p-4 overflow-auto" onScrollCapture={handleScroll}>
+						<div className="flex-1 px-4 relatve overflow-y-auto flex flex-col-reverse justify-content-end" onScrollCapture={handleScroll}>
 							{isLoadingMessages && (
 								<div className="flex justify-center py-3">
 									<Loader className="h-5 w-5 animate-spin text-lime-500" />
@@ -605,8 +604,10 @@ const ChatInterface: React.FC = () => {
 								</div>
 							)}
 							
-							{/* Scroll to bottom button */}
-							{activeChat.id && sortedMessages.length > 10 && (
+	
+						</div>
+						{/* Scroll to bottom button */}
+							{/* {activeChat.id && sortedMessages.length > 10 && (
 								<Button 
 									onClick={handleScrollToBottom} 
 									size="sm"
@@ -614,9 +615,7 @@ const ChatInterface: React.FC = () => {
 								>
 									<ChevronUp size={16} />
 								</Button>
-							)}
-						</ScrollArea>
-
+							)} */}
 						{activeChat.id && (
 							<div className="p-4 border-t">
 								{/* Image preview */}
