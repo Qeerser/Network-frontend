@@ -18,7 +18,7 @@ export const createGroupSlice: StateCreator<
 	[],
 	[],
 	GroupSlice
-> = (set, get) => ({
+> = (set, get, api) => ({
 	availableGroups: [],
 	
 	createGroup: (name: string): Chat => {

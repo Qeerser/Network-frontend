@@ -17,7 +17,7 @@ export const createChatSlice: StateCreator<
 	[],
 	[],
 	ChatSlice
-> = (set) => ({
+> = (set, get, api) => ({
 	activeChat: { id: "", name: "", type: null },
 	fetchedChats: {},
 	

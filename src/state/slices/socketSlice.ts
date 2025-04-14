@@ -22,7 +22,7 @@ export const createSocketSlice: StateCreator<
 	[],
 	[],
 	SocketSlice
-> = (set, get) => ({
+> = (set, get, api) => ({
 	socket: null,
 	isConnected: false,
 

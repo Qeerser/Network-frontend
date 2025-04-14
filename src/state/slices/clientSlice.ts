@@ -16,7 +16,7 @@ export const createClientSlice: StateCreator<
 	[],
 	[],
 	ClientSlice
-> = (set, get) => ({
+> = (set, get, api) => ({
 	clientName: "",
 	clientId: "",
 	connectedClients: [],

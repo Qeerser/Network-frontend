@@ -11,12 +11,12 @@ import { createSocketSlice } from "./slices/socketSlice";
 
 export type { ChatMessage, ChatGroup, Client, Chat } from "./types/chatTypes";
 
-export const useChatStore = create<ChatState>((set, get) => ({
-	...createClientSlice(set, get),
-	...createChatSlice(set, get),
-	...createGroupSlice(set, get),
-	...createMessageSlice(set, get),
-	...createSocketSlice(set, get),
+export const useChatStore = create<ChatState>((set, get, api) => ({
+	...createClientSlice(set, get, api),
+	...createChatSlice(set, get, api),
+	...createGroupSlice(set, get, api),
+	...createMessageSlice(set, get, api),
+	...createSocketSlice(set, get, api),
 	
 	// Initialize with default values
 	clientName: useAuthStore.getState().currentUser?.username || "Guest",
