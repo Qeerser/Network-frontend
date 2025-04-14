@@ -21,6 +21,7 @@ import {
 	RefreshCw,
 	Loader,
 	ChevronUp,
+	Edit,
 } from "lucide-react";
 import ChatMessage from "./ChatMessage";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
@@ -50,6 +51,7 @@ const ChatInterface: React.FC = () => {
 		createGroup,
 		leaveGroup,
 		deleteGroup,
+		renameGroup,
 		availableGroups,
 		activeChat,
 		setActiveChat,
@@ -66,6 +68,8 @@ const ChatInterface: React.FC = () => {
 	const [chatType, setChatType] = useState<"private" | "group">("group");
 	const [newGroupName, setNewGroupName] = useState("");
 	const [showNewGroupDialog, setShowNewGroupDialog] = useState(false);
+	const [showRenameGroupDialog, setShowRenameGroupDialog] = useState(false);
+	const [renameGroupText, setRenameGroupText] = useState("");
 	const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 	const [imageAttachment, setImageAttachment] = useState<string | null>(null);
 	
@@ -76,10 +80,6 @@ const ChatInterface: React.FC = () => {
 	// Handle tab change
 	const handleTabChange = (value: string) => {
 		console.log("Tab changed to:", value);
-		if (chatType === "group" && activeChat.id && value === "private") {
-			leaveChat();
-		}
-
 		setChatType(value as "private" | "group");
 		clearActiveChat(); // Clear active chat when switching tabs
 	};
@@ -217,8 +217,8 @@ const ChatInterface: React.FC = () => {
 	};
 
 	const handleDeleteGroup = (group: Chat) => {
-		const targetGroup = availableGroups.find((g) => g.name === group.name);
-		if (targetGroup?.creator === clientName) {
+		const targetGroup = availableGroups.find((g) => g.id === group.id);
+		if (targetGroup?.creator === clientName || targetGroup?.creatorId === clientId) {
 			deleteGroup(group);
 			toast({
 				title: "Group Deleted",
@@ -232,6 +232,16 @@ const ChatInterface: React.FC = () => {
 				variant: "destructive",
 			});
 		}
+	};
+	
+	const handleRenameGroup = (e: React.FormEvent) => {
+		e.preventDefault();
+
+		if (!renameGroupText.trim() || !activeChat.id) return;
+
+		renameGroup(activeChat, renameGroupText);
+		setRenameGroupText("");
+		setShowRenameGroupDialog(false);
 	};
 
 	const handleClearChat = () => {
@@ -288,6 +298,12 @@ const ChatInterface: React.FC = () => {
 		if (b.lastMessage) return 1;
 		return a.name.localeCompare(b.name);
 	});
+	
+	// Check if current user is creator of active group
+	const isCreatorOfActiveGroup = activeChat.type === "group" && 
+	                              availableGroups.some(g => 
+	                                g.id === activeChat.id && 
+	                                (g.creator === clientName || g.creatorId === clientId));
 
 	return (
 		<div className="flex flex-col h-full border rounded-md overflow-hidden">
@@ -415,7 +431,7 @@ const ChatInterface: React.FC = () => {
 									{sortedGroups.length > 0 ? (
 										sortedGroups.map((group) => (
 											<li
-												key={group.name}
+												key={group.id}
 												onClick={() => {
 													setActiveChat({ id: group.id, name: group.name, type: "group" });
 													if (!group.members.includes(clientName)) {
@@ -427,7 +443,7 @@ const ChatInterface: React.FC = () => {
 													}
 												}}
 												className={`p-2 rounded-md cursor-pointer transition-colors ${
-													activeChat.name === group.name && chatType === "group"
+													activeChat.id === group.id && chatType === "group"
 														? "bg-lime-600/20"
 														: "hover:bg-lime-600/10"
 												}`}
@@ -443,7 +459,7 @@ const ChatInterface: React.FC = () => {
 															</Button>
 														</DropdownMenuTrigger>
 														<DropdownMenuContent align="end">
-															{group.members.includes(clientName) ? (
+															{group.members.includes(clientName) && !isCreatorOfActiveGroup && (
 																<DropdownMenuItem
 																	onClick={(e) => {
 																		e.stopPropagation();
@@ -457,7 +473,9 @@ const ChatInterface: React.FC = () => {
 																	<LogOut className="mr-2 h-4 w-4" />
 																	Leave Group
 																</DropdownMenuItem>
-															) : (
+															)}
+															
+															{!group.members.includes(clientName) && (
 																<DropdownMenuItem
 																	onClick={(e) => {
 																		e.stopPropagation();
@@ -473,21 +491,34 @@ const ChatInterface: React.FC = () => {
 																</DropdownMenuItem>
 															)}
 
-															{group.creator === clientName && (
-																<DropdownMenuItem
-																	onClick={(e) => {
-																		e.stopPropagation();
-																		handleDeleteGroup({
-																			id: group.id,
-																			name: group.name,
-																			type: "group",
-																		});
-																	}}
-																	className="text-destructive"
-																>
-																	<Trash2 className="mr-2 h-4 w-4" />
-																	Delete Group
-																</DropdownMenuItem>
+															{(group.creator === clientName || group.creatorId === clientId) && (
+																<>
+																	<DropdownMenuItem
+																		onClick={(e) => {
+																			e.stopPropagation();
+																			setRenameGroupText(group.name);
+																			setActiveChat({ id: group.id, name: group.name, type: "group" });
+																			setShowRenameGroupDialog(true);
+																		}}
+																	>
+																		<Edit className="mr-2 h-4 w-4" />
+																		Rename Group
+																	</DropdownMenuItem>
+																	<DropdownMenuItem
+																		onClick={(e) => {
+																			e.stopPropagation();
+																			handleDeleteGroup({
+																				id: group.id,
+																				name: group.name,
+																				type: "group",
+																			});
+																		}}
+																		className="text-destructive"
+																	>
+																		<Trash2 className="mr-2 h-4 w-4" />
+																		Delete Group
+																	</DropdownMenuItem>
+																</>
 															)}
 														</DropdownMenuContent>
 													</DropdownMenu>
@@ -535,26 +566,41 @@ const ChatInterface: React.FC = () => {
 									<div className="flex gap-2">
 										{chatType === "group" && (
 											<>
-												{/* Leave group button */}
-												<Button
-													variant="outline"
-													size="sm"
-													onClick={() => handleLeaveGroup(activeChat)}
-													className="h-8 hover:bg-lime-600/10 hover:text-lime-600 transition-colors"
-												>
-													<LogOut size={14} className="mr-1" /> Leave
-												</Button>
+												{/* Group action buttons */}
+												{isCreatorOfActiveGroup ? (
+													<>
+														{/* Rename group button */}
+														<Button
+															variant="outline"
+															size="sm"
+															onClick={() => {
+																setRenameGroupText(activeChat.name);
+																setShowRenameGroupDialog(true);
+															}}
+															className="h-8 hover:bg-lime-600/10 hover:text-lime-600 transition-colors"
+														>
+															<Edit size={14} className="mr-1" /> Rename
+														</Button>
 
-												{/* Delete group button (if creator) */}
-												{availableGroups.find((g) => g.id === activeChat.id)?.creator ===
-													clientName && (
+														{/* Delete group button */}
+														<Button
+															variant="destructive"
+															size="sm"
+															onClick={() => handleDeleteGroup(activeChat)}
+															className="h-8"
+														>
+															<Trash2 size={14} className="mr-1" /> Delete
+														</Button>
+													</>
+												) : (
+													/* Leave group button (only for non-creators) */
 													<Button
-														variant="destructive"
+														variant="outline"
 														size="sm"
-														onClick={() => handleDeleteGroup(activeChat)}
-														className="h-8"
+														onClick={() => handleLeaveGroup(activeChat)}
+														className="h-8 hover:bg-lime-600/10 hover:text-lime-600 transition-colors"
 													>
-														<Trash2 size={14} className="mr-1" /> Delete
+														<LogOut size={14} className="mr-1" /> Leave
 													</Button>
 												)}
 											</>
@@ -604,9 +650,7 @@ const ChatInterface: React.FC = () => {
 								</div>
 							)}
 							
-	
-						</div>
-						{/* Scroll to bottom button */}
+							{/* Scroll to bottom button - uncomment if needed */}
 							{/* {activeChat.id && sortedMessages.length > 10 && (
 								<Button 
 									onClick={handleScrollToBottom} 
@@ -616,6 +660,8 @@ const ChatInterface: React.FC = () => {
 									<ChevronUp size={16} />
 								</Button>
 							)} */}
+						</div>
+						
 						{activeChat.id && (
 							<div className="p-4 border-t">
 								{/* Image preview */}
@@ -695,6 +741,26 @@ const ChatInterface: React.FC = () => {
 					</div>
 				</div>
 			</Tabs>
+
+			{/* Rename Group Dialog */}
+			<Dialog open={showRenameGroupDialog} onOpenChange={setShowRenameGroupDialog}>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>Rename Group</DialogTitle>
+					</DialogHeader>
+					<form onSubmit={handleRenameGroup}>
+						<Input
+							value={renameGroupText}
+							onChange={(e) => setRenameGroupText(e.target.value)}
+							placeholder="New group name"
+							className="my-4"
+						/>
+						<DialogFooter>
+							<Button type="submit" className="bg-lime-600 hover:bg-lime-700">Save</Button>
+						</DialogFooter>
+					</form>
+				</DialogContent>
+			</Dialog>
 		</div>
 	);
 };
