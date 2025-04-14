@@ -1,202 +1,127 @@
 
 import React, { useState } from 'react';
-import { formatDistance } from 'date-fns';
-import { ChatMessage as ChatMessageType } from '@/state/store';
-import { Button } from '@/components/ui/button';
-import { Edit, Smile, Check, X } from 'lucide-react';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Input } from './ui/input';
-import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+import { ChatMessage as MessageType } from '@/state/store';
+import { Pencil, Smile, CheckCheck } from 'lucide-react';
+import { formatRelative } from 'date-fns';
+import EmojiPicker from './EmojiPicker';
 
 interface ChatMessageProps {
-  message: ChatMessageType;
+  message: MessageType;
   isOwnMessage: boolean;
   isInGroup: boolean;
-  onEditMessage?: (id: string, newContent: string) => void;
-  onReactMessage?: (id: string, reaction: string) => void;
+  onEditMessage?: (messageId: string, newContent: string) => void;
+  onReactMessage?: (messageId: string, reaction: string) => void;
 }
-
-const EMOJI_REACTIONS = ['👍', '❤️', '😄', '😮', '😢', '👀'];
 
 const ChatMessage: React.FC<ChatMessageProps> = ({ 
   message, 
-  isOwnMessage,
+  isOwnMessage, 
   isInGroup,
   onEditMessage,
-  onReactMessage
+  onReactMessage 
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState(message.content);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   
-  const formattedTime = formatDistance(
-    new Date(message.timestamp),
-    new Date(),
-    { addSuffix: true }
-  );
-
-  // Generate initials from name for avatar fallback
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map(part => part.charAt(0))
-      .join('')
-      .toUpperCase()
-      .substring(0, 2);
-  };
-
-  const handleSaveEdit = () => {
-    if (editedContent.trim() && onEditMessage) {
+  const handleSubmitEdit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (onEditMessage && editedContent.trim()) {
       onEditMessage(message.id, editedContent);
       setIsEditing(false);
     }
   };
 
-  const handleCancelEdit = () => {
-    setEditedContent(message.content);
-    setIsEditing(false);
-  };
-  
-  const handleReaction = (reaction: string) => {
+  const handleReaction = (emoji: string) => {
     if (onReactMessage) {
-      onReactMessage(message.id, reaction);
+      onReactMessage(message.id, emoji);
+      setShowEmojiPicker(false);
     }
   };
 
+  const messageDate = new Date(message.timestamp);
+  const formattedDate = formatRelative(messageDate, new Date());
+  
   return (
-    <div className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'} group mb-2`}>
-      {/* Avatar (only show for other users' messages) */}
-      {!isOwnMessage && (
-        <div className="self-start mr-2">
-          <Avatar className="h-8 w-8">
-            <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${message.fromId}`} />
-            <AvatarFallback className="bg-lime-600 text-white text-xs">
-              {getInitials(message.from)}
-            </AvatarFallback>
-          </Avatar>
-        </div>
-      )}
-      
-      <div className="flex flex-col max-w-[70%]">
-        {/* Message content */}
+    <div className={`flex gap-2 relative group ${isOwnMessage ? 'justify-end' : 'justify-start'}`}>
+      <div className={`flex max-w-[75%] flex-col ${isOwnMessage ? 'items-end' : 'items-start'}`}>
+        {/* Message sender name - only show in groups if not own message */}
+        {isInGroup && !isOwnMessage && (
+          <div className="text-xs font-medium ml-2 mb-0.5 text-lime-600 dark:text-lime-400">
+            {message.from}
+          </div>
+        )}
+        
+        {/* Message bubble */}
         <div 
-          className={`rounded-lg p-3 ${
+          className={`rounded-2xl px-3 py-2 break-words ${
             isOwnMessage 
-              ? 'bg-lime-600 text-white rounded-tr-none ml-auto' 
-              : 'bg-background border border-border rounded-tl-none'
+              ? 'bg-lime-500 text-white rounded-br-none' 
+              : 'bg-background border border-border rounded-bl-none'
           }`}
         >
-          {/* Display sender name in group chats for others' messages */}
-          {isInGroup && !isOwnMessage && (
-            <p className="text-xs font-medium mb-1 text-lime-500">{message.from}</p>
-          )}
-          
           {isEditing ? (
-            <div className="flex flex-col gap-2">
-              <Input
+            <form onSubmit={handleSubmitEdit} className="flex">
+              <input
+                type="text"
                 value={editedContent}
                 onChange={(e) => setEditedContent(e.target.value)}
-                className="text-sm text-foreground bg-background"
+                className="bg-transparent border-b border-white focus:outline-none text-sm px-0 w-full"
                 autoFocus
+                onBlur={() => setIsEditing(false)}
               />
-              <div className="flex justify-end gap-1">
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={handleCancelEdit} 
-                  className="h-6 w-6 p-0">
-                  <X size={14} />
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={handleSaveEdit} 
-                  className="h-6 w-6 p-0">
-                  <Check size={14} />
-                </Button>
-              </div>
-            </div>
+            </form>
           ) : (
-            <div className="text-sm break-words">
-              {message.content}
-              {message.edited && (
-                <span className="text-xs text-muted-foreground ml-2 opacity-70">
-                  (edited)
-                </span>
-              )}
+            <>
+              <div className="text-sm whitespace-pre-wrap">{message.content}</div>
+              
               {message.image && (
-                <img 
-                  src={message.image} 
-                  alt="Message attachment" 
-                  className="mt-2 max-w-full rounded shadow-[var(--pixel-shadow)]"
-                />
+                <img src={message.image} alt="Message attachment" className="max-w-full rounded-md mt-2" />
               )}
-            </div>
-          )}
-            
-          {/* Message reaction display - single emoji */}
-          {message.reactions && (
-            <div className="mt-2">
-              <span 
-                className="inline-block bg-background/20 rounded-full px-2 py-0.5 text-xs"
-              >
-                {message.reactions}
-              </span>
-            </div>
+              
+              {message.reactions && (
+                <div className="text-lg mt-1">{message.reactions}</div>
+              )}
+              
+              {message.edited && (
+                <span className="text-xs opacity-70 ml-1">(edited)</span>
+              )}
+            </>
           )}
         </div>
         
-        {/* Timestamp and actions below the message bubble */}
-        <div className={`flex justify-between items-center mt-1 px-1 text-xs text-muted-foreground ${isOwnMessage ? 'flex-row-reverse' : 'flex-row'}`}>
-          <span className="opacity-70">
-            {formattedTime}
-          </span>
-          
-          <div className={`flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity ${isOwnMessage ? 'flex-row-reverse' : 'flex-row'}`}>
-            {/* Reactions dropdown */}
-            {onReactMessage && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="h-6 w-6 p-0 hover:opacity-100"
-                  >
-                    <span className="sr-only">React to message</span>
-                    <Smile size={14} />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align={isOwnMessage ? "end" : "start"} className="grid grid-cols-3 p-1">
-                  {EMOJI_REACTIONS.map(emoji => (
-                    <DropdownMenuItem 
-                      key={emoji} 
-                      onClick={() => handleReaction(emoji)}
-                      className="px-2 py-1 flex justify-center items-center hover:bg-accent"
-                    >
-                      {emoji}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
+        {/* Message timestamp */}
+        <div className="text-xs text-muted-foreground opacity-0 group-hover:opacity-100 px-2 transition-opacity">
+          {formattedDate} {isOwnMessage && <CheckCheck className="inline h-3 w-3 ml-1" />}
+        </div>
+      </div>
+      
+      {/* Message actions */}
+      <div className={`absolute top-0 ${isOwnMessage ? 'left-0 -translate-x-full' : 'right-0 translate-x-full'} opacity-0 group-hover:opacity-100 flex gap-1 transition-opacity`}>
+        {onEditMessage && isOwnMessage && (
+          <button 
+            onClick={() => setIsEditing(true)}
+            className="p-1 hover:bg-accent rounded-full"
+          >
+            <Pencil className="h-3.5 w-3.5" />
+          </button>
+        )}
+        {onReactMessage && (
+          <div className="relative">
+            <button 
+              onClick={() => setShowEmojiPicker(prev => !prev)}
+              className="p-1 hover:bg-accent rounded-full"
+            >
+              <Smile className="h-3.5 w-3.5" />
+            </button>
             
-            {/* Edit button (only for own messages) */}
-            {isOwnMessage && onEditMessage && (
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={() => setIsEditing(true)}
-                className="h-6 w-6 p-0 hover:opacity-100"
-              >
-                <Edit size={14} />
-              </Button>
+            {showEmojiPicker && (
+              <div className="absolute bottom-full mb-2 z-10">
+                <EmojiPicker onSelect={handleReaction} onClose={() => setShowEmojiPicker(false)} />
+              </div>
             )}
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
