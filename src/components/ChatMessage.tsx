@@ -11,10 +11,12 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from './ui/input';
+import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 
 interface ChatMessageProps {
   message: ChatMessageType;
   isOwnMessage: boolean;
+  isInGroup: boolean;
   onEditMessage?: (id: string, newContent: string) => void;
   onReactMessage?: (id: string, reaction: string) => void;
 }
@@ -24,6 +26,7 @@ const EMOJI_REACTIONS = ['👍', '❤️', '😄', '😮', '😢', '👀'];
 const ChatMessage: React.FC<ChatMessageProps> = ({ 
   message, 
   isOwnMessage,
+  isInGroup,
   onEditMessage,
   onReactMessage
 }) => {
@@ -35,6 +38,16 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
     new Date(),
     { addSuffix: true }
   );
+
+  // Generate initials from name for avatar fallback
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(part => part.charAt(0))
+      .join('')
+      .toUpperCase()
+      .substring(0, 2);
+  };
 
   const handleSaveEdit = () => {
     if (editedContent.trim() && onEditMessage) {
@@ -55,16 +68,29 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
   };
 
   return (
-    <div className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'}`}>
+    <div className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'} group`}>
+      {/* Avatar (only show for other users' messages) */}
+      {!isOwnMessage && (
+        <div className="self-end mb-1 mr-2">
+          <Avatar className="h-8 w-8">
+            <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${message.fromId}`} />
+            <AvatarFallback className="bg-lime-600 text-white text-xs">
+              {getInitials(message.from)}
+            </AvatarFallback>
+          </Avatar>
+        </div>
+      )}
+      
       <div 
-        className={`max-w-[70%] rounded-lg p-3 ${
+        className={`max-w-[70%] rounded-2xl p-3 ${
           isOwnMessage 
-            ? 'bg-primary text-primary-foreground ml-auto' 
-            : 'bg-secondary text-secondary-foreground'
-        }`}
+            ? 'bg-lime-600 text-white ml-auto' 
+            : 'bg-background border border-border'
+        } shadow-sm`}
       >
-        {!isOwnMessage && (
-          <p className="text-xs font-medium mb-1">{message.from}</p>
+        {/* Display sender name in group chats for others' messages */}
+        {isInGroup && !isOwnMessage && (
+          <p className="text-xs font-medium mb-1 text-lime-500">{message.from}</p>
         )}
         
         {isEditing ? (
@@ -94,8 +120,13 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
           </div>
         ) : (
           <>
-            <p className="text-sm break-words">
+            <div className="text-sm break-words">
               {message.content}
+              {message.edited && (
+                <span className="text-xs text-muted-foreground ml-2 opacity-70">
+                  (edited)
+                </span>
+              )}
               {message.image && (
                 <img 
                   src={message.image} 
@@ -103,13 +134,13 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
                   className="mt-2 max-w-full rounded shadow-[var(--pixel-shadow)]"
                 />
               )}
-            </p>
+            </div>
             
             {/* Message reaction display - single emoji */}
             {message.reactions && (
               <div className="mt-2">
                 <span 
-                  className="inline-block bg-background/20 rounded px-1.5 py-0.5 text-xs"
+                  className="inline-block bg-background/20 rounded-full px-2 py-0.5 text-xs"
                 >
                   {message.reactions}
                 </span>
@@ -121,7 +152,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
                 {formattedTime}
               </span>
               
-              <div className="flex gap-1">
+              <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                 {/* Reactions dropdown */}
                 {onReactMessage && (
                   <DropdownMenu>
@@ -129,8 +160,9 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
                       <Button 
                         variant="ghost" 
                         size="sm" 
-                        className="h-6 w-6 p-0 opacity-70 hover:opacity-100"
+                        className="h-6 w-6 p-0 hover:opacity-100"
                       >
+                        <span className="sr-only">React to message</span>
                         <Smile size={14} />
                       </Button>
                     </DropdownMenuTrigger>
@@ -154,7 +186,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
                     variant="ghost" 
                     size="sm" 
                     onClick={() => setIsEditing(true)}
-                    className="h-6 w-6 p-0 opacity-70 hover:opacity-100"
+                    className="h-6 w-6 p-0 hover:opacity-100"
                   >
                     <Edit size={14} />
                   </Button>

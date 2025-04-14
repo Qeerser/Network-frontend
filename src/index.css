@@ -3,92 +3,21 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 221.2 83.2% 53.3%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
-    --radius: 1rem;
-  }
+@import url("./styles/theme.css");
 
-  .dark {
-    --background: 222 47% 11%;
-    --foreground: 210 40% 98%;
-    --card: 222 47% 11%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222 47% 11%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 217.2 91.2% 59.8%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.5% 48%;
-  }
+/* Additional custom styling */
+.theme-transition * {
+  transition-property: background-color, border-color, color, fill, stroke;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
 }
 
-@layer base {
-  * {
-    @apply border-border selection:bg-primary/20 selection:text-primary;
-  }
-  
-  body {
-    @apply bg-background text-foreground antialiased overflow-hidden;
-    font-feature-settings: "ss01", "ss02", "cv01", "cv02";
-  }
-
-  html {
-    @apply scroll-smooth;
-  }
-  
-  ::-webkit-scrollbar {
-    @apply w-1.5;
-  }
-
-  ::-webkit-scrollbar-track {
-    @apply bg-transparent;
-  }
-
-  ::-webkit-scrollbar-thumb {
-    @apply rounded-full bg-muted/80 hover:bg-muted;
-  }
-
-  .theme-transition {
-    @apply transition-colors duration-300;
-  }
-
-  .glass-card {
-    @apply dark:bg-black/40 dark:backdrop-blur-lg border dark:border-white/10 light:bg-white/10 light:backdrop-blur-sm;
-  }
+/* Hide scrollbar for cleaner UI but keep functionality */
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
 }
 
-.hover-scale {
-  @apply transition-all duration-300 ease-in-out hover:scale-105;
-}
-
-.btn-transition {
-  @apply transition-all duration-300 ease-in-out hover:shadow-md;
+.hide-scrollbar {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
 }

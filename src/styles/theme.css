@@ -1,0 +1,96 @@
+
+@layer base {
+  .dark {
+    --background: 0 0% 0%;   /* Pure black */
+    --foreground: 0 0% 98%;
+    
+    --card: 0 0% 3%;         /* Slightly lighter black for cards */
+    --card-foreground: 0 0% 98%;
+    
+    --popover: 0 0% 3%;
+    --popover-foreground: 0 0% 98%;
+    
+    --primary: 90 61% 50%;   /* Lime color */
+    --primary-foreground: 0 0% 98%;
+    
+    --secondary: 0 0% 9%;    /* Dark gray for secondary elements */
+    --secondary-foreground: 0 0% 98%;
+    
+    --muted: 0 0% 9%;
+    --muted-foreground: 0 0% 63%;
+    
+    --accent: 90 61% 8%;     /* Subtle lime accent */
+    --accent-foreground: 0 0% 98%;
+    
+    --destructive: 0 62.8% 50.6%;
+    --destructive-foreground: 0 0% 98%;
+    
+    --border: 0 0% 15%;
+    --input: 0 0% 15%;
+    --ring: 90 61% 50%;      /* Lime for rings/focus */
+  }
+  
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    
+    --primary: 90 61% 50%;  /* Lime color for light mode too */
+    --primary-foreground: 0 0% 98%;
+    
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    
+    --accent: 90 61% 96%;   /* Light lime accent */
+    --accent-foreground: 222.2 47.4% 11.2%;
+    
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 90 61% 50%;     /* Lime for rings/focus */
+  }
+}
+
+/* Transition for theme changes */
+body {
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Custom styling for buttons and interactive elements */
+.hover-lime-transition {
+  transition: background-color 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+}
+
+.hover-lime-transition:hover {
+  background-color: hsl(var(--primary) / 0.1);
+  transform: translateY(-1px);
+}
+
+/* Black scrollbar for dark mode */
+.dark ::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: hsl(0 0% 5%);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: hsl(0 0% 25%);
+  border-radius: 5px;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--primary) / 0.5);
+}

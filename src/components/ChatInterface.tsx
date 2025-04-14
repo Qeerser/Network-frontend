@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef, useCallback, act } from "react";
+
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Chat, useChatStore } from "@/state/store";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -17,10 +18,9 @@ import {
 	X,
 	Trash2,
 	LogOut,
-	Moon,
-	Sun,
 	RefreshCw,
 	Loader,
+	ChevronUp,
 } from "lucide-react";
 import ChatMessage from "./ChatMessage";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
@@ -34,8 +34,7 @@ import { toast } from "@/hooks/use-toast";
 import EmojiPicker from "./EmojiPicker";
 
 const ChatInterface: React.FC = () => {
-	const { theme, toggleTheme } = useTheme();
-	const { logout, currentUser } = useAuthStore();
+	const { currentUser } = useAuthStore();
 	const navigate = useNavigate();
 
 	const {
@@ -57,6 +56,8 @@ const ChatInterface: React.FC = () => {
 		clearActiveChat,
 		clearChatMessages,
 		fetchMessages,
+		isLoadingMessages,
+		oldestMessageTimestamp,
 	} = useChatStore();
 
 	const [messageText, setMessageText] = useState("");
@@ -65,101 +66,14 @@ const ChatInterface: React.FC = () => {
 	const [showNewGroupDialog, setShowNewGroupDialog] = useState(false);
 	const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 	const [imageAttachment, setImageAttachment] = useState<string | null>(null);
-	const [loadingMessages, setLoadingMessages] = useState(false);
-	const [oldestMessageTime, setOldestMessageTime] = useState<Record<string, number>>({});
+	const [fetchedChats, setFetchedChats] = useState<Record<string, boolean>>({});
+	
 	const imageInputRef = useRef<HTMLInputElement>(null);
-
 	const messagesEndRef = useRef<HTMLDivElement>(null);
 	const scrollAreaRef = useRef<HTMLDivElement>(null);
 
-	// Handle logout
-	const handleLogout = () => {
-		logout();
-		navigate("/login");
-	};
-	const handleFetchMessages = useCallback(
-		(chatId: string, type: "private" | "group") => {
-			setLoadingMessages(true);
-			fetchMessages(chatId, type,10);
-			// Simulate API call with setTimeout
-			setTimeout(() => {
-				setLoadingMessages(false);
-
-				// Store the oldest message time for this chat
-				const chatMessages = messages.filter((msg) => {
-					if (type === "private") {
-						return (
-							(msg.from === chatId && msg.to === clientName) ||
-							(msg.from === clientName && msg.to === chatId)
-						);
-					} else {
-						return msg.to === chatId && !msg.isPrivate;
-					}
-				});
-
-				if (chatMessages.length > 0) {
-					// Find oldest message
-					const oldest = chatMessages.reduce((prev, curr) => (prev.timestamp < curr.timestamp ? prev : curr));
-
-					setOldestMessageTime((prev) => ({
-						...prev,
-						[`${type}-${chatId}`]: oldest.timestamp,
-					}));
-				}
-			}, 500); // Simulate network delay
-		},
-		[messages, clientName]
-	);
-
-	// Set active chat when selected chat changes
-	useEffect(() => {
-		if (activeChat.id) {
-			setActiveChat(activeChat);
-			// Simulate fetching messages for the selected chat
-		}
-	}, [activeChat, chatType, setActiveChat]);
-
-	useEffect(() => {
-		if (activeChat.id) {
-			handleFetchMessages(activeChat.id, activeChat.type);
-		}
-	}, [activeChat]);
-
-	// Simulate fetching older messages
-
-	// Load more messages when scrolling to the top
-	// const handleScroll = useCallback(
-	// 	(event: React.UIEvent<HTMLDivElement>) => {
-  //     console.log("Scroll event triggered");
-	// 		const target = event.target as HTMLDivElement;
-
-	// 		// If scrolled to the top (or near), load more messages
-	// 		if (target.scrollTop < 3 && !loadingMessages && activeChat.id) {
-	// 			const oldestTime = oldestMessageTime[`${activeChat.type}-${activeChat.name}`] || Date.now();
-  //       fetchMessages(activeChat.id, activeChat.type);
-	// 			setLoadingMessages(true);
-	// 			// Simulate loading older messages
-	// 			setTimeout(() => {
-	// 				setLoadingMessages(false);
-
-	// 				// Update oldest message time to be even older (simulate pagination)
-	// 				setOldestMessageTime((prev) => ({
-	// 					...prev,
-	// 					[`${activeChat.type}-${activeChat.name}`]: oldestTime - 86400000, // 24 hours older
-	// 				}));
-	// 			}, 1000);
-	// 		}
-	// 	},
-	// 	[activeChat, loadingMessages, oldestMessageTime]
-	// );
-
-    const handleScroll = (event: React.UIEvent<HTMLDivElement>) => {
-      console.log("Scroll event triggered");
-    }
-
 	// Handle tab change
 	const handleTabChange = (value: string) => {
-		// When switching tab types, leave the current room if we're in a group
 		console.log("Tab changed to:", value);
 		if (chatType === "group" && activeChat.id && value === "private") {
 			leaveChat();
@@ -177,6 +91,31 @@ const ChatInterface: React.FC = () => {
 		clearActiveChat();
 	};
 
+	// Set active chat and fetch messages if not fetched already
+	useEffect(() => {
+		if (activeChat.id) {
+			// Only fetch messages if we haven't already for this chat
+			if (!fetchedChats[`${activeChat.type}-${activeChat.id}`]) {
+				setFetchedChats(prev => ({
+					...prev,
+					[`${activeChat.type}-${activeChat.id}`]: true
+				}));
+				
+				console.log(`Fetching messages for ${activeChat.type}:${activeChat.id}`);
+				fetchMessages(activeChat.id, activeChat.type, 15);
+			}
+		}
+	}, [activeChat, fetchMessages]);
+
+	// Auto scroll to bottom on new messages or when chat changes
+	useEffect(() => {
+		if (activeChat.id) {
+			setTimeout(() => {
+				messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+			}, 100);
+		}
+	}, [activeChat.id, messages.length]);
+
 	// Filter messages based on the active chat and chat type
 	const filteredMessages = messages.filter((msg) => {
 		if (chatType === "private" && activeChat.id) {
@@ -192,12 +131,28 @@ const ChatInterface: React.FC = () => {
 	});
 
 	// Sort messages by timestamp
-  const sortedMessages = [...filteredMessages].sort((a, b) => a.timestamp - b.timestamp);
+    const sortedMessages = [...filteredMessages].sort((a, b) => a.timestamp - b.timestamp);
 
-	// Auto scroll to bottom on new messages
-	useEffect(() => {
-		messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-	}, [sortedMessages.length]);
+	// Handle scroll to load more messages
+	const handleScroll = useCallback((event: React.UIEvent<HTMLDivElement>) => {
+		const target = event.target as HTMLDivElement;
+		const scrollContainer = target.querySelector('[data-radix-scroll-area-viewport]');
+		
+		if (!scrollContainer || isLoadingMessages || !activeChat.id) return;
+		
+		// Load more messages if scrolled to top (or near)
+		if (scrollContainer.scrollTop < 20) {
+			console.log("Scrolled to top, loading more messages");
+			const chatKey = `${activeChat.type}-${activeChat.id}`;
+			const beforeTimestamp = oldestMessageTimestamp[activeChat.id];
+			
+			if (beforeTimestamp) {
+				fetchMessages(activeChat.id, activeChat.type, 10, beforeTimestamp);
+			} else {
+				fetchMessages(activeChat.id, activeChat.type, 10);
+			}
+		}
+	}, [activeChat, isLoadingMessages, oldestMessageTimestamp, fetchMessages]);
 
 	const handleSendMessage = (e: React.FormEvent) => {
 		e.preventDefault();
@@ -312,6 +267,10 @@ const ChatInterface: React.FC = () => {
 		}
 	};
 
+	const handleScrollToBottom = () => {
+		messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+	};
+
 	// Filter out the current user from the connected clients list
 	const otherClients = connectedClients.filter((client) => client.name !== clientName);
 
@@ -354,7 +313,7 @@ const ChatInterface: React.FC = () => {
 							{chatType === "group" && (
 								<Dialog open={showNewGroupDialog} onOpenChange={setShowNewGroupDialog}>
 									<DialogTrigger asChild>
-										<Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+										<Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-lime-600/10 transition-colors">
 											<PlusCircle size={16} />
 										</Button>
 									</DialogTrigger>
@@ -370,7 +329,7 @@ const ChatInterface: React.FC = () => {
 												className="my-4"
 											/>
 											<DialogFooter>
-												<Button type="submit">Create Group</Button>
+												<Button type="submit" className="bg-lime-600 hover:bg-lime-700">Create Group</Button>
 											</DialogFooter>
 										</form>
 									</DialogContent>
@@ -378,7 +337,7 @@ const ChatInterface: React.FC = () => {
 							)}
 
 							{/* Clear chat button */}
-							<Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={handleClearChat}>
+							<Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-lime-600/10 transition-colors" onClick={handleClearChat}>
 								<RefreshCw size={16} />
 							</Button>
 						</div>
@@ -403,10 +362,10 @@ const ChatInterface: React.FC = () => {
 																type: "private",
 															})
 														}
-														className={`p-2 rounded-md cursor-pointer flex items-center gap-2 ${
+														className={`p-2 rounded-md cursor-pointer flex items-center gap-2 transition-colors ${
 															activeChat.id === client.id && chatType === "private"
-																? "bg-primary/10"
-																: "hover:bg-secondary/20"
+																? "bg-lime-600/20"
+																: "hover:bg-lime-600/10"
 														}`}
 													>
 														<span className="h-2 w-2 rounded-full bg-green-500"></span>
@@ -436,10 +395,10 @@ const ChatInterface: React.FC = () => {
 																type: "private",
 															})
 														}
-														className={`p-2 rounded-md cursor-pointer flex items-center gap-2 opacity-60 ${
+														className={`p-2 rounded-md cursor-pointer flex items-center gap-2 opacity-60 transition-colors ${
 															activeChat.id === client.id && chatType === "private"
-																? "bg-primary/10"
-																: "hover:bg-secondary/20"
+																? "bg-lime-600/20"
+																: "hover:bg-lime-600/10"
 														}`}
 													>
 														<span className="h-2 w-2 rounded-full bg-gray-400"></span>
@@ -468,10 +427,10 @@ const ChatInterface: React.FC = () => {
 														});
 													}
 												}}
-												className={`p-2 rounded-md cursor-pointer ${
+												className={`p-2 rounded-md cursor-pointer transition-colors ${
 													activeChat.name === group.name && chatType === "group"
-														? "bg-primary/10"
-														: "hover:bg-secondary/20"
+														? "bg-lime-600/20"
+														: "hover:bg-lime-600/10"
 												}`}
 											>
 												<div className="flex justify-between items-center">
@@ -558,8 +517,8 @@ const ChatInterface: React.FC = () => {
 					{/* Chat Area */}
 					<div className="flex-1 flex flex-col">
 						{activeChat.id ? (
-							<div className=" justify-center p-4 pb-0">
-								<div className=" pb-2 border-b flex justify-between items-center">
+							<div className="p-4 pb-2 border-b sticky top-0 bg-background z-10">
+								<div className="flex justify-between items-center">
 									<div>
 										<h3 className="font-semibold">
 											{chatType === "private" ? `Chat with ${activeChat.name}` : activeChat.name}
@@ -582,7 +541,7 @@ const ChatInterface: React.FC = () => {
 													variant="outline"
 													size="sm"
 													onClick={() => handleLeaveGroup(activeChat)}
-													className="h-8"
+													className="h-8 hover:bg-lime-600/10 hover:text-lime-600 transition-colors"
 												>
 													<LogOut size={14} className="mr-1" /> Leave
 												</Button>
@@ -614,27 +573,25 @@ const ChatInterface: React.FC = () => {
 							</div>
 						)}
 
-						<ScrollArea className="flex-1 p-4 pt-0" ref={scrollAreaRef} onScroll={handleScroll}>
-							{loadingMessages && (
+						<ScrollArea className="flex-1 p-4 overflow-auto" onScrollCapture={handleScroll}>
+							{isLoadingMessages && (
 								<div className="flex justify-center py-3">
-									<Loader className="h-5 w-5 animate-spin text-muted-foreground" />
+									<Loader className="h-5 w-5 animate-spin text-lime-500" />
 								</div>
 							)}
 							{activeChat.id && (
-								<div className="">
+								<div className="flex flex-col space-y-3">
 									{sortedMessages.length > 0 ? (
-										<div className="space-y-3">
-											{sortedMessages.map((msg) => (
-												<ChatMessage
-													key={msg.id}
-													message={msg}
-													isOwnMessage={msg.from === clientName}
-													onEditMessage={msg.from === clientName ? editMessage : undefined}
-													onReactMessage={reactToMessage}
-												/>
-											))}
-											<div ref={messagesEndRef} />
-										</div>
+										sortedMessages.map((msg) => (
+											<ChatMessage
+												key={msg.id}
+												message={msg}
+												isOwnMessage={msg.fromId === clientId}
+												isInGroup={activeChat.type === 'group'}
+												onEditMessage={msg.fromId === clientId ? editMessage : undefined}
+												onReactMessage={reactToMessage}
+											/>
+										))
 									) : (
 										<div className="h-full flex items-center justify-center">
 											<p className="text-muted-foreground text-center">
@@ -644,7 +601,19 @@ const ChatInterface: React.FC = () => {
 											</p>
 										</div>
 									)}
+									<div ref={messagesEndRef} />
 								</div>
+							)}
+							
+							{/* Scroll to bottom button */}
+							{activeChat.id && sortedMessages.length > 10 && (
+								<Button 
+									onClick={handleScrollToBottom} 
+									size="sm"
+									className="rounded-full fixed bottom-24 right-8 shadow-md bg-lime-600 hover:bg-lime-700"
+								>
+									<ChevronUp size={16} />
+								</Button>
 							)}
 						</ScrollArea>
 
@@ -698,7 +667,7 @@ const ChatInterface: React.FC = () => {
 										size="icon"
 										variant="ghost"
 										onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-										className="h-10 w-10 p-0"
+										className="h-10 w-10 p-0 hover:bg-lime-600/10 transition-colors"
 									>
 										<Smile size={20} />
 									</Button>
@@ -708,12 +677,17 @@ const ChatInterface: React.FC = () => {
 										size="icon"
 										variant="ghost"
 										onClick={() => imageInputRef.current?.click()}
-										className="h-10 w-10 p-0"
+										className="h-10 w-10 p-0 hover:bg-lime-600/10 transition-colors"
 									>
 										<Image size={20} />
 									</Button>
 
-									<Button type="submit" size="sm" disabled={!messageText.trim() && !imageAttachment}>
+									<Button 
+										type="submit" 
+										size="sm" 
+										disabled={!messageText.trim() && !imageAttachment}
+										className="bg-lime-600 hover:bg-lime-700 transition-colors"
+									>
 										<Send size={16} className="mr-2" /> Send
 									</Button>
 								</form>

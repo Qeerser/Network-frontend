@@ -1,3 +1,4 @@
+
 import { apiClient } from "@/hooks/axios";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
@@ -6,6 +7,17 @@ export interface User {
 	id: string;
 	email: string;
 	username: string;
+}
+
+interface LoginCredentials {
+	email: string;
+	password: string;
+}
+
+interface RegisterCredentials {
+	username: string;
+	email: string;
+	password: string;
 }
 
 interface AuthState {
@@ -17,11 +29,12 @@ interface AuthState {
 	token: string | "";
 
 	// Actions
-	login: (email: string, password: string) => Promise<void>;
-	register: (username: string, email: string, password: string) => Promise<void>;
+	login: (credentials: LoginCredentials) => Promise<void>;
+	register: (credentials: RegisterCredentials) => Promise<void>;
 	logout: () => void;
 	clearError: () => void;
 }
+
 interface AuthResponse {
 	user: User;
 	token: string;
@@ -36,19 +49,17 @@ export const useAuthStore = create<AuthState>()(
 			error: null,
 			token: "",
 
-			login: async (email, password) => {
+			login: async ({ email, password }) => {
 				set({ isLoading: true, error: null });
 
 				try {
-					// Simple validation - in production, this would be a real API call
-					const reponse = await apiClient.post<AuthResponse>("/auth/login", {
+					const response = await apiClient.post<AuthResponse>("/auth/login", {
 						email,
 						password,
 					});
 
-					if (reponse.status === 200) {
-						const { user, token } = reponse.data;
-						// Very simple password check for demo
+					if (response.status === 200) {
+						const { user, token } = response.data;
 						set({
 							token,
 							isAuthenticated: true,
@@ -69,11 +80,10 @@ export const useAuthStore = create<AuthState>()(
 				}
 			},
 
-			register: async (username, email, password) => {
+			register: async ({ username, email, password }) => {
 				set({ isLoading: true, error: null });
 
 				try {
-					// Simulate API call
 					const response = await apiClient.post<AuthResponse>("/auth/register", {
 						name: username,
 						email,
@@ -108,6 +118,7 @@ export const useAuthStore = create<AuthState>()(
 				set({
 					isAuthenticated: false,
 					currentUser: null,
+					token: "",
 				});
 			},
 
