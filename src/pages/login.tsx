@@ -57,7 +57,10 @@ const Login: React.FC = () => {
   }, [error, toast, clearError]);
 
   const onSubmit = async (data: LoginFormValues) => {
-    await login(data.email, data.password);
+    await login({
+      email: data.email,
+      password: data.password
+    });
   };
   
   return (

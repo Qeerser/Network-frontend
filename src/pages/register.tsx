@@ -65,7 +65,11 @@ const Register: React.FC = () => {
   }, [error, toast, clearError]);
 
   const onSubmit = async (data: RegisterFormValues) => {
-    await register(data.username, data.email, data.password);
+    await register({
+      username: data.username,
+      email: data.email,
+      password: data.password
+    });
   };
 
   return (

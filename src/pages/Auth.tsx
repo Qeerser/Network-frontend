@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { z } from 'zod';
@@ -68,12 +67,19 @@ const Auth: React.FC = () => {
 
   // Login form submission
   const handleLogin = async (data: LoginFormValues) => {
-    await login(data.email, data.password);
+    await login({
+      email: data.email,
+      password: data.password
+    });
   };
 
   // Register form submission
   const handleRegister = async (data: RegisterFormValues) => {
-    await registerUser(data.username, data.email, data.password);
+    await registerUser({
+      username: data.username,
+      email: data.email,
+      password: data.password
+    });
   };
 
   // Toggle between login and register
