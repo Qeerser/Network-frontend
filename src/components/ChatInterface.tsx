@@ -344,7 +344,7 @@ const ChatInterface: React.FC = () => {
 								{sortedJoinedGroups.length > 0 && (
 									<div className="mb-4">
 										<h4 className="text-xs font-medium text-muted-foreground mb-2 px-1">Joined Groups</h4>
-										<GroupsList 
+										<GroupsList
 											groups={sortedJoinedGroups}
 											activeChat={activeChat}
 											clientName={clientName}
@@ -358,6 +358,7 @@ const ChatInterface: React.FC = () => {
 												setActiveChat(group);
 												setShowRenameGroupDialog(true);
 											}}
+											onClickGroupMember={handleGroupMemberClick}
 										/>
 									</div>
 								)}

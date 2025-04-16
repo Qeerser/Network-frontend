@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { ChatGroup } from '@/state/store';
+import { ChatGroup, Client } from '@/state/store';
 import { MoreHorizontal, TrashIcon, Pencil, LogOut, UserPlus, Users } from 'lucide-react';
 import { 
   DropdownMenu, 
@@ -37,6 +37,7 @@ interface GroupItemProps {
   onLeave: () => void;
   onDelete: () => void;
   onRename: () => void;
+  onClickGroupMember: (member: Client) => void;
 }
 
 const GroupItem: React.FC<GroupItemProps> = ({
@@ -50,7 +51,8 @@ const GroupItem: React.FC<GroupItemProps> = ({
   onJoin,
   onLeave,
   onDelete,
-  onRename
+  onRename,
+  onClickGroupMember
 }) => {
   const [showMembersDialog, setShowMembersDialog] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
@@ -123,14 +125,17 @@ const GroupItem: React.FC<GroupItemProps> = ({
                   <ScrollArea className="h-[300px] mt-2">
                     <ul className="space-y-2">
                       {group.members.map((member, i) => (
-                        <li key={i} className="flex items-center gap-2 p-2 rounded hover:bg-accent">
+                        <li key={i} onClick={() => { if (member !== clientName) onClickGroupMember(member); }} className={`flex items-center gap-2 p-2 rounded hover:bg-accent ${member === clientName ? 'bg-accent' : 'cursor-pointer'}`}>
                           <div className="h-8 w-8 rounded-full bg-lime-200 flex items-center justify-center">
                             {member.charAt(0).toUpperCase()}
                           </div>
                           <div>
                             <div className="font-medium">{member}</div>
                             {group.creator === member && (
-                              <div className="text-xs text-muted-foreground">Creator</div>
+                              <span className="text-xs text-muted-foreground">Creator </span>
+                            )}
+                            {member === clientName && (
+                              <span className="text-xs text-muted-foreground font-bold">(You)</span>
                             )}
                           </div>
                         </li>

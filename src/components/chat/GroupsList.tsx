@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { ChatGroup, Chat } from '@/state/store';
+import { ChatGroup, Chat, Client } from '@/state/store';
 import GroupItem from './GroupItem';
 
 interface GroupsListProps {
@@ -14,6 +14,7 @@ interface GroupsListProps {
   onDeleteGroup: (group: Chat) => void;
   onRenameGroup: (group: Chat) => void;
   showJoinOnHover?: boolean;
+  onClickGroupMember: (member: Client) => void;
 }
 
 const GroupsList: React.FC<GroupsListProps> = ({ 
@@ -26,7 +27,8 @@ const GroupsList: React.FC<GroupsListProps> = ({
   onLeaveGroup,
   onDeleteGroup,
   onRenameGroup,
-  showJoinOnHover
+  showJoinOnHover,
+  onClickGroupMember
 }) => {
   // Split groups into joined and available
   const joinedGroups = groups.filter(group => 
@@ -52,6 +54,7 @@ const GroupsList: React.FC<GroupsListProps> = ({
                 group={group}
                 isActive={activeChat.id === group.id && activeChat.type === "group"}
                 isCreator={group.creator === clientName || group.creatorId === clientId}
+                onClickGroupMember={onClickGroupMember}
                 isMember={true}
                 clientName={clientName}
                 clientId={clientId}
@@ -107,6 +110,7 @@ const GroupsList: React.FC<GroupsListProps> = ({
                 isCreator={false}
                 isMember={false}
                 clientName={clientName}
+                onClickGroupMember={onClickGroupMember}
                 clientId={clientId}
                 onSelect={() => {
                   onGroupSelect({
