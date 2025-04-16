@@ -13,6 +13,7 @@ interface GroupsListProps {
   onLeaveGroup: (group: Chat) => void;
   onDeleteGroup: (group: Chat) => void;
   onRenameGroup: (group: Chat) => void;
+  showJoinOnHover?: boolean;
 }
 
 const GroupsList: React.FC<GroupsListProps> = ({ 
@@ -24,7 +25,8 @@ const GroupsList: React.FC<GroupsListProps> = ({
   onJoinGroup,
   onLeaveGroup,
   onDeleteGroup,
-  onRenameGroup
+  onRenameGroup,
+  showJoinOnHover
 }) => {
   // Split groups into joined and available
   const joinedGroups = groups.filter(group => 
