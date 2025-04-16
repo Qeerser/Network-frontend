@@ -238,7 +238,6 @@ const ChatInterface: React.FC = () => {
 		setChatType("private");
 	};
 
-	const otherClients = connectedClients.filter((client) => client.name !== clientName && client.id !== clientId);
 	
 	const activeGroupMembers = activeChat.type === "group" 
 		? availableGroups.find(g => g.id === activeChat.id)?.members || []
@@ -251,7 +250,7 @@ const ChatInterface: React.FC = () => {
 			)
 		: [];
 
-	const sortedOtherClients = [...otherClients].sort((a, b) => a.name.localeCompare(b.name));
+	const sortedconnectedClients = [...connectedClients].sort((a, b) => a.name.localeCompare(b.name));
 	const sortedOfflineClients = [...(offlineClients || [])].sort((a, b) => a.name.localeCompare(b.name));
 
 	const joinedGroups = availableGroups.filter(group => 
@@ -327,7 +326,7 @@ const ChatInterface: React.FC = () => {
 
 						{chatType === "private" ? (
 							<UsersPanel 
-								onlineUsers={sortedOtherClients}
+								onlineUsers={sortedconnectedClients}
 								offlineUsers={sortedOfflineClients}
 								activeChat={activeChat}
 								recentPrivateChats={recentPrivateChats}
