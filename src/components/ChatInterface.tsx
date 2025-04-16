@@ -3,7 +3,7 @@ import { Chat, Client, useChatStore } from "@/state/store";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Loader, PlusCircle, RefreshCw, UserPlus, Users } from "lucide-react";
+import { Loader, PlusCircle, RefreshCw, UserPlus, Users, Flag } from "lucide-react"; // Added Flag import
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
