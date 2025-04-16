@@ -6,6 +6,7 @@ import { ChatMessage, ChatState, MessageFetchParams } from "../types/chatTypes";
 
 export interface MessageSlice {
 	messages: ChatMessage[];
+	recentPrivateMessages: Record<string, ChatMessage>;
 	sendMessage: (content: string, to: string, isPrivate: boolean, toId?: string, image?: string) => void;
 	editMessage: (messageId: string, newContent: string) => void;
 	reactToMessage: (messageId: string, reaction: string) => void;
@@ -15,6 +16,7 @@ export interface MessageSlice {
 	oldestMessageTimestamp: Record<string, number>;
 	setOldestMessageTimestamp: (chatId: string, timestamp: number) => void;
 	fetchMessages: (target: string, type: "private" | "group", limit?: number, before?: number) => void;
+	fetchRecentMessages: () => void;
 }
 
 export const createMessageSlice: StateCreator<
@@ -24,6 +26,7 @@ export const createMessageSlice: StateCreator<
 	MessageSlice
 > = (set, get) => ({
 	messages: [],
+	recentPrivateMessages: {},
 	isLoadingMessages: false,
 	hasMoreMessages: true,
 	oldestMessageTimestamp: {},
@@ -64,6 +67,7 @@ export const createMessageSlice: StateCreator<
 									content: content.length > 30 ? content.substring(0, 30) + "..." : content,
 									timestamp: Date.now(),
 								},
+								lastMessageSender: clientName
 						  }
 						: group
 				),
@@ -78,7 +82,7 @@ export const createMessageSlice: StateCreator<
 	},
 
 	editMessage: (messageId: string, newContent: string) => {
-		const { socket, messages } = get();
+		const { socket, messages, clientName } = get();
 
 		const messageToEdit = messages.find((msg) => msg.id === messageId);
 
@@ -89,7 +93,7 @@ export const createMessageSlice: StateCreator<
 
 		set((state) => ({
 			messages: state.messages.map((message) =>
-				message.id === messageId ? { ...message, content: newContent, edited: true } : message
+				message.id === messageId ? { ...message, content: newContent, edited: true, editedBy: clientName } : message
 			),
 		}));
 
@@ -99,7 +103,7 @@ export const createMessageSlice: StateCreator<
 	},
 
 	reactToMessage: (messageId: string, reaction: string) => {
-		const { socket, messages } = get();
+		const { socket, messages, clientName, clientId } = get();
 
 		const messageToReact = messages.find((msg) => msg.id === messageId);
 
@@ -108,16 +112,28 @@ export const createMessageSlice: StateCreator<
 			return;
 		}
 
-		set((state) => ({
-			messages: state.messages.map((message) =>
-				message.id === messageId
-					? {
-							...message,
-							reactions: reaction,
-					  }
-					: message
-			),
-		}));
+		const userReaction = { id: clientId, name: clientName };
+        
+        // Check if this reaction already exists for this user
+        const hasExistingReaction = messageToReact.reactions && 
+            messageToReact.reactions[reaction] &&
+            messageToReact.reactions[reaction].some(user => user.id === clientId);
+        
+        set((state) => ({
+            messages: state.messages.map((message) =>
+                message.id === messageId
+                    ? {
+                        ...message,
+                        reactions: {
+                            ...message.reactions,
+                            [reaction]: hasExistingReaction
+                                ? (message.reactions?.[reaction] || []).filter(user => user.id !== clientId)
+                                : [...(message.reactions?.[reaction] || []), userReaction]
+                        }
+                    }
+                    : message
+            ),
+        }));
 
 		if (socket && socket.connected) {
 			socket.emit("reactToMessage", { messageId, reaction });
@@ -195,5 +211,16 @@ export const createMessageSlice: StateCreator<
 			});
 			set({ isLoadingMessages: false });
 		});
+	},
+
+	fetchRecentMessages: () => {
+		const { socket } = get();
+
+		if (!socket || !socket.connected) {
+			console.error("Cannot fetch recent messages: Socket not connected");
+			return;
+		}
+
+		socket.emit("fetchRecentMessages");
 	}
 });

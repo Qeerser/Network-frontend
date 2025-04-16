@@ -4,6 +4,7 @@ import { ChatMessage as MessageType } from '@/state/store';
 import { Pencil, Smile, CheckCheck } from 'lucide-react';
 import { formatRelative } from 'date-fns';
 import EmojiPicker from './EmojiPicker';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface ChatMessageProps {
   message: MessageType;
@@ -41,11 +42,16 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
 
   const messageDate = new Date(message.timestamp);
   const formattedDate = formatRelative(messageDate, new Date());
+
+  // Get all reactions as array for easier rendering
+  const reactionsArray = message.reactions 
+    ? Object.entries(message.reactions).map(([emoji, users]) => ({ emoji, users }))
+    : [];
   
   return (
     <div className={`flex gap-2 relative group ${isOwnMessage ? 'justify-end' : 'justify-start'}`}>
-      {/* Message actions - positioned closer to the message */}
-      <div className={`absolute ${isOwnMessage ? 'left-0' : 'right-0'} top-1 opacity-0 group-hover:opacity-100 flex gap-1 transition-opacity`}>
+      {/* Message actions - positioned above the message for better alignment */}
+      <div className={`absolute ${isOwnMessage ? 'right-2' : 'left-2'} -top-6 opacity-0 group-hover:opacity-100 flex gap-1 transition-opacity bg-background/80 rounded-full p-1 shadow-sm z-10`}>
         {onEditMessage && isOwnMessage && (
           <button 
             onClick={() => setIsEditing(true)}
@@ -64,14 +70,11 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
             </button>
             
             {showEmojiPicker && (
-              <div className={`absolute z-10 ${isOwnMessage ? 'left-6' : 'right-6'} top-0`}>
-                <div className="emoji-picker-wrapper">
-                  {/* Using custom render props for EmojiPicker */}
-                  <EmojiPicker 
-                    onEmojiSelect={handleReaction}
-                    onClose={() => setShowEmojiPicker(false)}
-                  ></EmojiPicker>
-                </div>
+              <div className={`absolute z-20 ${isOwnMessage ? 'right-0' : 'left-0'} top-6`}>
+                <EmojiPicker 
+                  onEmojiSelect={handleReaction}
+                  onClose={() => setShowEmojiPicker(false)}
+                />
               </div>
             )}
           </div>
@@ -113,16 +116,33 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
                 <img src={message.image} alt="Message attachment" className="max-w-full rounded-md mt-2" />
               )}
               
-              {message.reactions && (
-                <div className="text-lg mt-1">{message.reactions}</div>
-              )}
-              
               {message.edited && (
-                <span className="text-xs opacity-70 ml-1">(edited)</span>
+                <span className="text-xs opacity-70 ml-1">(edited{message.editedBy ? ` by ${message.editedBy}` : ''})</span>
               )}
             </>
           )}
         </div>
+        
+        {/* Message reactions - show below the message */}
+        {reactionsArray.length > 0 && (
+          <div className="flex flex-wrap gap-1 mt-1 px-2">
+            {reactionsArray.filter(r => r.users.length > 0).map(({ emoji, users }) => (
+              <TooltipProvider key={emoji}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="bg-background border rounded-full px-1.5 py-0.5 text-sm flex items-center gap-1 hover:bg-accent cursor-default">
+                      <span>{emoji}</span>
+                      <span className="text-xs">{users.length}</span>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{users.map(u => u.name).join(', ')}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            ))}
+          </div>
+        )}
         
         {/* Message timestamp */}
         <div className="text-xs text-muted-foreground opacity-0 group-hover:opacity-100 px-2 transition-opacity">

@@ -25,7 +25,7 @@ const EmojiPicker: React.FC<EmojiPickerProps> = ({ onEmojiSelect, onClose }) => 
   };
 
   return (
-    <div className="bg-background border rounded-lg shadow-[var(--pixel-shadow)] p-2 max-h-[200px] overflow-hidden">
+    <div className="bg-background border rounded-lg shadow-lg p-2 max-h-[200px] overflow-hidden z-50">
       <div className="flex gap-2 mb-2 overflow-x-auto">
         {Object.keys(EMOJI_CATEGORIES).map((category) => (
           <button

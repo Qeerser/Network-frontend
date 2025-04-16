@@ -11,8 +11,9 @@ export interface ChatMessage {
 	timestamp: number;
 	isPrivate: boolean;
 	image?: string;
-	reactions?: string;
+	reactions?: Record<string, Array<{id: string, name: string}>>;
 	edited?: boolean;
+	editedBy?: string;
 }
 
 export interface ChatGroup {
@@ -27,6 +28,7 @@ export interface ChatGroup {
 		timestamp: number;
 	};
 	lastMessageSender?: string;
+	joined?: boolean;
 }
 
 export interface Client {
@@ -78,6 +80,7 @@ export interface ChatState {
 
 	// Message state
 	messages: ChatMessage[];
+	recentPrivateMessages: Record<string, ChatMessage>;
 	sendMessage: (content: string, to: string, isPrivate: boolean, toId?: string, image?: string) => void;
 	editMessage: (messageId: string, newContent: string) => void;
 	reactToMessage: (messageId: string, reaction: string) => void;
@@ -87,6 +90,7 @@ export interface ChatState {
 	oldestMessageTimestamp: Record<string, number>;
 	setOldestMessageTimestamp: (chatId: string, timestamp: number) => void;
 	fetchMessages: (target: string, type: "private" | "group", limit?: number, before?: number) => void;
+	fetchRecentMessages: () => void;
 
 	// Socket state
 	socket: Socket | null;

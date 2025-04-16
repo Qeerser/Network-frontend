@@ -1,12 +1,12 @@
 
 import { StateCreator } from "zustand";
-import { io , Socket} from "socket.io-client";
+import { io, Socket } from "socket.io-client";
 import { ChatState, ChatMessage, Client, ChatGroup } from "../types/chatTypes";
 import { useAuthStore } from "../authStore";
 import { getConfig } from "@/config";
 
 export interface SocketSlice {
-	socket: Socket | null ;
+	socket: Socket | null;
 	isConnected: boolean;
 	connect: () => void;
 	disconnect: () => void;
@@ -46,7 +46,7 @@ export const createSocketSlice: StateCreator<
 
 		socket.on("connect", () => {
 			console.log("Connected to socket server");
-			set(() => ({ isConnected: true }));
+			set({ isConnected: true });
 
 			const { clientName, clientId } = get();
 			if (clientName && clientId) {
@@ -56,7 +56,7 @@ export const createSocketSlice: StateCreator<
 
 		socket.on("disconnect", () => {
 			console.log("Disconnected from socket server");
-			set(() => ({ isConnected: false }));
+			set({ isConnected: false });
 		});
 
 		socket.on("clients", (clients: Client[]) => {
@@ -107,21 +107,24 @@ export const createSocketSlice: StateCreator<
 			}
 		});
 
-		socket.on("messageEdited", ({ messageId, newContent }: { messageId: string; newContent: string }) => {
+		socket.on("messageEdited", ({ messageId, newContent, editedBy }: { messageId: string; newContent: string; editedBy: string }) => {
 			set((state) => ({
 				messages: state.messages.map((message) =>
-					message.id === messageId ? { ...message, content: newContent, edited: true } : message
+					message.id === messageId ? { ...message, content: newContent, edited: true, editedBy } : message
 				),
 			}));
 		});
 
-		socket.on("messageReacted", ({ messageId, reaction }: { messageId: string; reaction: string }) => {
+		socket.on("messageReacted", ({ messageId, reaction, reactedBy }: { messageId: string; reaction: string; reactedBy: { id: string; name: string } }) => {
 			set((state) => ({
 				messages: state.messages.map((message) =>
 					message.id === messageId
 						? {
 								...message,
-								reactions: reaction,
+								reactions: {
+									...message.reactions,
+									[reaction]: [...(message.reactions?.[reaction] || []), reactedBy]
+								}
 						  }
 						: message
 				),
@@ -144,18 +147,27 @@ export const createSocketSlice: StateCreator<
 			}));
 		});
 
+		socket.on("recentMessages", ({ chats }: { chats: Record<string, ChatMessage> }) => {
+			set((state) => {
+				// Update recent private chats with latest messages
+				return {
+					recentPrivateMessages: chats
+				};
+			});
+		});
+
 		socket.onAny((event, ...args) => {
 			console.log(`Received event: ${event}`, args);
 		});
 
-		set(() => ({ socket }));
+		set({ socket });
 	},
 
 	disconnect: () => {
 		const { socket } = get();
 		if (socket) {
 			socket.disconnect();
-			set(() => ({ socket: null, isConnected: false }));
+			set({ socket: null, isConnected: false });
 		}
 	},
 });

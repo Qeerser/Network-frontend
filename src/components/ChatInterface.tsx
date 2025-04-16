@@ -37,10 +37,13 @@ const ChatInterface: React.FC = () => {
 		clearActiveChat,
 		clearChatMessages,
 		fetchMessages,
+		fetchRecentMessages,
 		fetchedChats,
 		setFetchedChats,
 		isLoadingMessages,
+		hasMoreMessages,
 		oldestMessageTimestamp,
+		recentPrivateMessages,
 	} = useChatStore();
 
 	const [chatType, setChatType] = useState<"private" | "group">("group");
@@ -50,6 +53,12 @@ const ChatInterface: React.FC = () => {
 	const [renameGroupText, setRenameGroupText] = useState("");
 	
 	const messagesEndRef = useRef<HTMLDivElement>(null);
+
+	// Fetch recent messages on component mount
+	useEffect(() => {
+		fetchRecentMessages();
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, []);
 
 	// Handle tab change
 	const handleTabChange = (value: string) => {
@@ -110,8 +119,8 @@ const ChatInterface: React.FC = () => {
 			lastMessageSender?: string;
 		}>();
 		
-		// Find all private messages
-		messages.forEach(msg => {
+		// Use recentPrivateMessages for more efficient last message tracking
+		Object.values(recentPrivateMessages).forEach(msg => {
 			if (msg.isPrivate) {
 				let chatId;
 				let chatName;
@@ -149,7 +158,7 @@ const ChatInterface: React.FC = () => {
 		return Array.from(chatMap.values()).sort(
 			(a, b) => (b.lastMessage?.timestamp || 0) - (a.lastMessage?.timestamp || 0)
 		);
-	}, [messages, clientId]);
+	}, [recentPrivateMessages, clientId]);
 
 	// Handler for sending messages
 	const handleSendMessage = (content: string, image?: string) => {
@@ -250,23 +259,17 @@ const ChatInterface: React.FC = () => {
 	const sortedOtherClients = [...otherClients].sort((a, b) => a.name.localeCompare(b.name));
 	const sortedOfflineClients = [...(offlineClients || [])].sort((a, b) => a.name.localeCompare(b.name));
 
+	// Separate joined and available groups
+	const joinedGroups = availableGroups.filter(group => 
+		group.memberIds?.includes(clientId) || group.members?.includes(clientName)
+	);
+	
+	const availableUnjoinedGroups = availableGroups.filter(group => 
+		!group.memberIds?.includes(clientId) && !group.members?.includes(clientName)
+	);
+
 	// Sort groups by last message timestamp if available
-	const sortedGroups = [...availableGroups].map(group => {
-		// Find the last message for this group
-		const groupMessages = messages.filter(msg => msg.toId === group.id && !msg.isPrivate);
-		if (groupMessages.length > 0) {
-			const lastMsg = groupMessages.sort((a, b) => b.timestamp - a.timestamp)[0];
-			return {
-				...group,
-				lastMessage: {
-					content: lastMsg.content.length > 30 ? lastMsg.content.substring(0, 30) + "..." : lastMsg.content,
-					timestamp: lastMsg.timestamp
-				},
-				lastMessageSender: lastMsg.from
-			};
-		}
-		return group;
-	}).sort((a, b) => {
+	const sortedJoinedGroups = [...joinedGroups].sort((a, b) => {
 		if (a.lastMessage && b.lastMessage) {
 			return b.lastMessage.timestamp - a.lastMessage.timestamp;
 		}
@@ -274,6 +277,10 @@ const ChatInterface: React.FC = () => {
 		if (b.lastMessage) return 1;
 		return a.name.localeCompare(b.name);
 	});
+
+	const sortedAvailableGroups = [...availableUnjoinedGroups].sort((a, b) => 
+		a.name.localeCompare(b.name)
+	);
 
 	return (
 		<div className="flex flex-col h-full border rounded-md overflow-hidden">
@@ -342,21 +349,48 @@ const ChatInterface: React.FC = () => {
 							/>
 						) : (
 							<ScrollArea className="flex-1">
-								<GroupsList 
-									groups={sortedGroups}
-									activeChat={activeChat}
-									clientName={clientName}
-									clientId={clientId}
-									onGroupSelect={setActiveChat}
-									onJoinGroup={joinGroup}
-									onLeaveGroup={leaveGroup}
-									onDeleteGroup={deleteGroup}
-									onRenameGroup={(group) => {
-										setRenameGroupText(group.name);
-										setActiveChat(group);
-										setShowRenameGroupDialog(true);
-									}}
-								/>
+								{sortedJoinedGroups.length > 0 && (
+									<div className="mb-4">
+										<h4 className="text-xs font-medium text-muted-foreground mb-2 px-1">Joined Groups</h4>
+										<GroupsList 
+											groups={sortedJoinedGroups}
+											activeChat={activeChat}
+											clientName={clientName}
+											clientId={clientId}
+											onGroupSelect={setActiveChat}
+											onJoinGroup={joinGroup}
+											onLeaveGroup={leaveGroup}
+											onDeleteGroup={deleteGroup}
+											onRenameGroup={(group) => {
+												setRenameGroupText(group.name);
+												setActiveChat(group);
+												setShowRenameGroupDialog(true);
+											}}
+										/>
+									</div>
+								)}
+								
+								{sortedAvailableGroups.length > 0 && (
+									<div>
+										<h4 className="text-xs font-medium text-muted-foreground mb-2 px-1">Available Groups</h4>
+										<GroupsList 
+											groups={sortedAvailableGroups}
+											activeChat={activeChat}
+											clientName={clientName}
+											clientId={clientId}
+											onGroupSelect={setActiveChat}
+											onJoinGroup={joinGroup}
+											onLeaveGroup={leaveGroup}
+											onDeleteGroup={deleteGroup}
+											onRenameGroup={(group) => {
+												setRenameGroupText(group.name);
+												setActiveChat(group);
+												setShowRenameGroupDialog(true);
+											}}
+											showJoinOnHover={true}
+										/>
+									</div>
+								)}
 							</ScrollArea>
 						)}
 					</div>

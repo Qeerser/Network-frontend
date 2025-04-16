@@ -22,6 +22,7 @@ export const useChatStore = create<ChatState>()((set, get, api) => ({
 	// Initialize with default values
 	clientName: useAuthStore.getState().currentUser?.username || "Guest",
 	clientId: useAuthStore.getState().currentUser?.id || uuidv4(),
+	recentPrivateMessages: {},
 	
 	// Added backward compatibility for socket methods
 	connectSocket: () => get().connect(),
