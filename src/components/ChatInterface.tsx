@@ -3,7 +3,7 @@ import { Chat, Client, useChatStore } from "@/state/store";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Loader, PlusCircle, RefreshCw, UserPlus, Users, Flag } from "lucide-react"; // Added Flag import
+import { Loader, PlusCircle, RefreshCw, UserPlus, Users, Flag } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
@@ -223,6 +223,8 @@ const ChatInterface: React.FC = () => {
 									(g.creator === clientName || g.creatorId === clientId));
 
 	const handleGroupMemberClick = (member: Client) => {
+		setChatType("private");
+		
 		const existingChat = recentPrivateChats.find(chat => chat.id === member.id);
 		
 		if (existingChat) {
@@ -234,11 +236,20 @@ const ChatInterface: React.FC = () => {
 				type: "private"
 			});
 		}
-		
-		setChatType("private");
+	};
+	
+	const handleDeleteGroup = (group: Chat) => {
+		deleteGroup(group);
+		if (activeChat.id === group.id && activeChat.type === "group") {
+			clearActiveChat();
+		}
+		toast({
+			title: "Group deleted",
+			description: `"${group.name}" has been deleted`,
+			variant: "default",
+		});
 	};
 
-	
 	const activeGroupMembers = activeChat.type === "group" 
 		? availableGroups.find(g => g.id === activeChat.id)?.members || []
 		: [];
@@ -276,7 +287,7 @@ const ChatInterface: React.FC = () => {
 
 	return (
 		<div className="flex flex-col h-full border rounded-md overflow-hidden">
-			<Tabs defaultValue="private" className="w-full h-full flex flex-col" onValueChange={handleTabChange}>
+			<Tabs value={chatType} defaultValue="private" className="w-full h-full flex flex-col" onValueChange={handleTabChange}>
 				<div className="border-b">
 					<TabsList className="grid w-full grid-cols-2">
 						<TabsTrigger value="private" className="flex items-center gap-2">
@@ -397,7 +408,7 @@ const ChatInterface: React.FC = () => {
 								setRenameGroupText(activeChat.name);
 								setShowRenameGroupDialog(true);
 							}}
-							onDeleteGroup={() => deleteGroup(activeChat)}
+							onDeleteGroup={() => handleDeleteGroup(activeChat)}
 							onLeaveGroup={() => leaveGroup(activeChat)}
 						/>
 

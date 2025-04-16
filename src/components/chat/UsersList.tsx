@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Client, Chat } from '@/state/store';
 import UserItem from './UserItem';
 import { Button } from '@/components/ui/button';
@@ -25,18 +25,41 @@ const UsersList: React.FC<UsersListProps> = ({
   const [showAllOnline, setShowAllOnline] = useState(false);
   const [showAllOffline, setShowAllOffline] = useState(false);
   
-  const displayedOnlineUsers = showAllOnline ? onlineUsers : onlineUsers.slice(0, MAX_DISPLAY_USERS);
+  // Reorganize online users to put current user at the top
+  const sortedOnlineUsers = useMemo(() => {
+    // Find the current user
+    const currentUserIndex = onlineUsers.findIndex(user => user.id === currentUserId);
+    
+    if (currentUserIndex === -1) return onlineUsers;
+    
+    // Create a new array with current user at the top
+    const result = [...onlineUsers];
+    const currentUser = result.splice(currentUserIndex, 1)[0];
+    return [currentUser, ...result];
+  }, [onlineUsers, currentUserId]);
+  
+  const displayedOnlineUsers = showAllOnline ? sortedOnlineUsers : sortedOnlineUsers.slice(0, MAX_DISPLAY_USERS);
   const displayedOfflineUsers = showAllOffline ? offlineUsers : offlineUsers.slice(0, MAX_DISPLAY_USERS);
   
-  const hasMoreOnline = onlineUsers.length > MAX_DISPLAY_USERS;
+  const hasMoreOnline = sortedOnlineUsers.length > MAX_DISPLAY_USERS;
   const hasMoreOffline = offlineUsers.length > MAX_DISPLAY_USERS;
+  
+  const handleUserClick = (user: Client) => {
+    // If already active, clear the selection; otherwise select the user
+    if (activeChat.id === user.id && activeChat.type === "private") {
+      // Clear active chat by passing an empty client
+      onUserSelect({ id: "", name: "" });
+    } else {
+      onUserSelect(user);
+    }
+  };
   
   return (
     <div className="space-y-4">
       {/* Online users */}
       <div>
         <h4 className="text-xs uppercase font-bold text-muted-foreground mb-2">
-          Online ({onlineUsers.length})
+          Online ({sortedOnlineUsers.length})
         </h4>
         <ul className="space-y-1">
           {displayedOnlineUsers.length > 0 ? (
@@ -46,7 +69,7 @@ const UsersList: React.FC<UsersListProps> = ({
                 client={client}
                 isActive={activeChat.id === client.id && activeChat.type === "private"}
                 isOnline={true}
-                onClick={() => onUserSelect(client)}
+                onClick={() => handleUserClick(client)}
                 isCurrentUser={client.id === currentUserId}
               />
             ))
@@ -68,7 +91,7 @@ const UsersList: React.FC<UsersListProps> = ({
               </>
             ) : (
               <>
-                <ChevronRight className="h-3 w-3 mr-1" /> Show {onlineUsers.length - MAX_DISPLAY_USERS} more
+                <ChevronRight className="h-3 w-3 mr-1" /> Show {sortedOnlineUsers.length - MAX_DISPLAY_USERS} more
               </>
             )}
           </Button>

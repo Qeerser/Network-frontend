@@ -124,22 +124,37 @@ const GroupItem: React.FC<GroupItemProps> = ({
                   </DialogHeader>
                   <ScrollArea className="h-[300px] mt-2">
                     <ul className="space-y-2">
-                      {group.members.map((member, i) => (
-                        <li key={i} onClick={() => { if (member !== clientName) onClickGroupMember(member); }} className={`flex items-center gap-2 p-2 rounded hover:bg-accent ${member === clientName ? 'bg-accent' : 'cursor-pointer'}`}>
-                          <div className="h-8 w-8 rounded-full bg-lime-200 flex items-center justify-center">
-                            {member.charAt(0).toUpperCase()}
-                          </div>
-                          <div>
-                            <div className="font-medium">{member}</div>
-                            {group.creator === member && (
-                              <span className="text-xs text-muted-foreground">Creator </span>
-                            )}
-                            {member === clientName && (
-                              <span className="text-xs text-muted-foreground font-bold">(You)</span>
-                            )}
-                          </div>
-                        </li>
-                      ))}
+                      {group.members.map((member, i) => {
+                        // Find the member's client object
+                        const memberObj = { id: group.memberIds?.[i] || '', name: member };
+                        const isCurrentUser = member === clientName;
+                        
+                        return (
+                          <li 
+                            key={i} 
+                            onClick={() => {
+                              if (!isCurrentUser) {
+                                onClickGroupMember(memberObj);
+                                setShowMembersDialog(false);
+                              }
+                            }} 
+                            className={`flex items-center gap-2 p-2 rounded ${isCurrentUser ? 'bg-accent' : 'hover:bg-accent cursor-pointer'}`}
+                          >
+                            <div className="h-8 w-8 rounded-full bg-lime-200 flex items-center justify-center">
+                              {member.charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                              <div className="font-medium">{member}</div>
+                              {group.creator === member && (
+                                <span className="text-xs text-muted-foreground">Creator </span>
+                              )}
+                              {isCurrentUser && (
+                                <span className="text-xs text-muted-foreground font-bold">(You)</span>
+                              )}
+                            </div>
+                          </li>
+                        );
+                      })}
                     </ul>
                   </ScrollArea>
                 </DialogContent>
