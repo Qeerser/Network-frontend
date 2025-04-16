@@ -43,6 +43,7 @@ const UsersPanel: React.FC<UsersPanelProps> = ({
             <RecentChats 
               recentChats={recentPrivateChats}
               activeChat={activeChat}
+              onlineUsers={onlineUsers}
               onChatSelect={onChatSelect}
             />
           </TabsContent>

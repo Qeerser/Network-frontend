@@ -3,7 +3,6 @@ import React, { useState } from 'react';
 import { ChatMessage as MessageType } from '@/state/store';
 import { Pencil, Smile, CheckCheck } from 'lucide-react';
 import { formatRelative } from 'date-fns';
-import EmojiPicker from './EmojiPicker';
 
 interface ChatMessageProps {
   message: MessageType;
@@ -44,6 +43,40 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
   
   return (
     <div className={`flex gap-2 relative group ${isOwnMessage ? 'justify-end' : 'justify-start'}`}>
+      {/* Message actions - positioned closer to the message */}
+      <div className={`absolute ${isOwnMessage ? 'left-0' : 'right-0'} top-1 opacity-0 group-hover:opacity-100 flex gap-1 transition-opacity`}>
+        {onEditMessage && isOwnMessage && (
+          <button 
+            onClick={() => setIsEditing(true)}
+            className="p-1 hover:bg-accent rounded-full"
+          >
+            <Pencil className="h-3.5 w-3.5" />
+          </button>
+        )}
+        {onReactMessage && (
+          <div className="relative">
+            <button 
+              onClick={() => setShowEmojiPicker(prev => !prev)}
+              className="p-1 hover:bg-accent rounded-full"
+            >
+              <Smile className="h-3.5 w-3.5" />
+            </button>
+            
+            {showEmojiPicker && (
+              <div className={`absolute z-10 ${isOwnMessage ? 'left-6' : 'right-6'} top-0`}>
+                <div className="emoji-picker-wrapper">
+                  {/* Using custom render props for EmojiPicker */}
+                  {React.createElement(require('@/components/EmojiPicker').default, {
+                    onEmojiSelect: handleReaction,
+                    onClose: () => setShowEmojiPicker(false)
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+      
       <div className={`flex max-w-[75%] flex-col ${isOwnMessage ? 'items-end' : 'items-start'}`}>
         {/* Message sender name - only show in groups if not own message */}
         {isInGroup && !isOwnMessage && (
@@ -94,37 +127,6 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
         <div className="text-xs text-muted-foreground opacity-0 group-hover:opacity-100 px-2 transition-opacity">
           {formattedDate} {isOwnMessage && <CheckCheck className="inline h-3 w-3 ml-1" />}
         </div>
-      </div>
-      
-      {/* Message actions - Moved closer to the message */}
-      <div className={`absolute ${isOwnMessage ? 'left-[-30px] top-1' : 'right-[-30px] top-1'} opacity-0 group-hover:opacity-100 flex flex-col gap-1 transition-opacity`}>
-        {onEditMessage && isOwnMessage && (
-          <button 
-            onClick={() => setIsEditing(true)}
-            className="p-1 hover:bg-accent rounded-full"
-          >
-            <Pencil className="h-3.5 w-3.5" />
-          </button>
-        )}
-        {onReactMessage && (
-          <div className="relative">
-            <button 
-              onClick={() => setShowEmojiPicker(prev => !prev)}
-              className="p-1 hover:bg-accent rounded-full"
-            >
-              <Smile className="h-3.5 w-3.5" />
-            </button>
-            
-            {showEmojiPicker && (
-              <div className={`absolute z-10 ${isOwnMessage ? 'left-6' : 'right-6'} top-0`}>
-                <EmojiPicker 
-                  onEmojiSelect={handleReaction} 
-                  onClose={() => setShowEmojiPicker(false)} 
-                />
-              </div>
-            )}
-          </div>
-        )}
       </div>
     </div>
   );

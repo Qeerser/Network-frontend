@@ -53,6 +53,7 @@ const GroupItem: React.FC<GroupItemProps> = ({
   onRename
 }) => {
   const [showMembersDialog, setShowMembersDialog] = useState(false);
+  const [isHovering, setIsHovering] = useState(false);
   
   return (
     <li
@@ -61,6 +62,8 @@ const GroupItem: React.FC<GroupItemProps> = ({
           ? "bg-lime-600/20"
           : "hover:bg-lime-600/10"
       }`}
+      onMouseEnter={() => setIsHovering(true)}
+      onMouseLeave={() => setIsHovering(false)}
     >
       <div className="flex-grow cursor-pointer" onClick={onSelect}>
         <div className="flex items-center justify-between">
@@ -83,6 +86,19 @@ const GroupItem: React.FC<GroupItemProps> = ({
           <Users className="h-3 w-3" /> {group.members.length} {group.members.length === 1 ? 'member' : 'members'}
         </div>
       </div>
+      
+      {/* Join button that appears on hover for non-members */}
+      {!isMember && isHovering && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onJoin();
+          }}
+          className="absolute right-2 top-2 px-2 py-1 rounded-md bg-lime-600 text-white text-xs hover:bg-lime-700 transition-colors"
+        >
+          Join
+        </button>
+      )}
       
       <div className="flex gap-1">
         <TooltipProvider>

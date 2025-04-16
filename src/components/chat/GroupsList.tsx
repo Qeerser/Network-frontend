@@ -26,66 +26,114 @@ const GroupsList: React.FC<GroupsListProps> = ({
   onDeleteGroup,
   onRenameGroup
 }) => {
+  // Split groups into joined and available
+  const joinedGroups = groups.filter(group => 
+    group.members.includes(clientName) || group.memberIds.includes(clientId)
+  );
+  
+  const availableGroups = groups.filter(group => 
+    !group.members.includes(clientName) && !group.memberIds.includes(clientId)
+  );
+
   return (
-    <ul className="space-y-1">
-      {groups.length > 0 ? (
-        groups.map((group) => (
-          <GroupItem
-            key={group.id}
-            group={group}
-            isActive={activeChat.id === group.id && activeChat.type === "group"}
-            isCreator={group.creator === clientName || group.creatorId === clientId}
-            isMember={group.members.includes(clientName) || group.memberIds.includes(clientId)}
-            clientName={clientName}
-            clientId={clientId}
-            onSelect={() => {
-              onGroupSelect({
-                id: group.id,
-                name: group.name,
-                type: "group"
-              });
-              if (!group.members.includes(clientName)) {
-                onJoinGroup({
-                  id: group.id,
-                  name: group.name,
-                  type: "group"
-                });
-              }
-            }}
-            onJoin={() => {
-              onJoinGroup({
-                id: group.id,
-                name: group.name,
-                type: "group"
-              });
-            }}
-            onLeave={() => {
-              onLeaveGroup({
-                id: group.id,
-                name: group.name,
-                type: "group"
-              });
-            }}
-            onDelete={() => {
-              onDeleteGroup({
-                id: group.id,
-                name: group.name,
-                type: "group"
-              });
-            }}
-            onRename={() => {
-              onRenameGroup({
-                id: group.id,
-                name: group.name,
-                type: "group"
-              });
-            }}
-          />
-        ))
-      ) : (
-        <p className="text-muted-foreground text-sm">No groups available</p>
+    <div className="space-y-4">
+      {/* Joined Groups */}
+      <div>
+        <h4 className="text-xs uppercase font-bold text-muted-foreground mb-2">
+          Your Groups ({joinedGroups.length})
+        </h4>
+        <ul className="space-y-1">
+          {joinedGroups.length > 0 ? (
+            joinedGroups.map((group) => (
+              <GroupItem
+                key={group.id}
+                group={group}
+                isActive={activeChat.id === group.id && activeChat.type === "group"}
+                isCreator={group.creator === clientName || group.creatorId === clientId}
+                isMember={true}
+                clientName={clientName}
+                clientId={clientId}
+                onSelect={() => {
+                  onGroupSelect({
+                    id: group.id,
+                    name: group.name,
+                    type: "group"
+                  });
+                }}
+                onJoin={() => {}}
+                onLeave={() => {
+                  onLeaveGroup({
+                    id: group.id,
+                    name: group.name,
+                    type: "group"
+                  });
+                }}
+                onDelete={() => {
+                  onDeleteGroup({
+                    id: group.id,
+                    name: group.name,
+                    type: "group"
+                  });
+                }}
+                onRename={() => {
+                  onRenameGroup({
+                    id: group.id,
+                    name: group.name,
+                    type: "group"
+                  });
+                }}
+              />
+            ))
+          ) : (
+            <p className="text-muted-foreground text-sm">You haven't joined any groups yet</p>
+          )}
+        </ul>
+      </div>
+
+      {/* Available Groups */}
+      {availableGroups.length > 0 && (
+        <div>
+          <h4 className="text-xs uppercase font-bold text-muted-foreground mb-2">
+            Available Groups ({availableGroups.length})
+          </h4>
+          <ul className="space-y-1">
+            {availableGroups.map((group) => (
+              <GroupItem
+                key={group.id}
+                group={group}
+                isActive={activeChat.id === group.id && activeChat.type === "group"}
+                isCreator={false}
+                isMember={false}
+                clientName={clientName}
+                clientId={clientId}
+                onSelect={() => {
+                  onGroupSelect({
+                    id: group.id,
+                    name: group.name,
+                    type: "group"
+                  });
+                  onJoinGroup({
+                    id: group.id,
+                    name: group.name,
+                    type: "group"
+                  });
+                }}
+                onJoin={() => {
+                  onJoinGroup({
+                    id: group.id,
+                    name: group.name,
+                    type: "group"
+                  });
+                }}
+                onLeave={() => {}}
+                onDelete={() => {}}
+                onRename={() => {}}
+              />
+            ))}
+          </ul>
+        </div>
       )}
-    </ul>
+    </div>
   );
 };
 
