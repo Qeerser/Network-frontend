@@ -7,9 +7,10 @@ interface UserItemProps {
   isActive: boolean;
   isOnline: boolean;
   onClick: () => void;
+  isCurrentUser?: boolean;
 }
 
-const UserItem: React.FC<UserItemProps> = ({ client, isActive, isOnline, onClick }) => {
+const UserItem: React.FC<UserItemProps> = ({ client, isActive, isOnline, onClick, isCurrentUser }) => {
   return (
     <li
       onClick={onClick}
@@ -20,7 +21,10 @@ const UserItem: React.FC<UserItemProps> = ({ client, isActive, isOnline, onClick
       } ${!isOnline && "opacity-60"}`}
     >
       <span className={`h-2 w-2 rounded-full ${isOnline ? "bg-green-500" : "bg-gray-400"}`}></span>
-      <span>{client.name}</span>
+      <div className="flex items-center">
+        <span>{client.name}</span>
+        {isCurrentUser && <span className="ml-1 text-xs text-muted-foreground">[You]</span>}
+      </div>
     </li>
   );
 };

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { Chat, useChatStore } from "@/state/store";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -9,7 +8,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
 
-// Import refactored components
 import ChatMessage from "./ChatMessage";
 import UsersPanel from "./chat/UsersPanel";
 import GroupsList from "./chat/GroupsList";
@@ -54,23 +52,18 @@ const ChatInterface: React.FC = () => {
 	
 	const messagesEndRef = useRef<HTMLDivElement>(null);
 
-	// Fetch recent messages on component mount
 	useEffect(() => {
 		fetchRecentMessages();
-		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 
-	// Handle tab change
 	const handleTabChange = (value: string) => {
 		console.log("Tab changed to:", value);
 		setChatType(value as "private" | "group");
-		clearActiveChat(); // Clear active chat when switching tabs
+		clearActiveChat();
 	};
 
-	// Set active chat and fetch messages if not fetched already
 	useEffect(() => {
 		if (activeChat.id) {
-			// Only fetch messages if we haven't already for this chat
 			if (!fetchedChats[`${activeChat.type}-${activeChat.id}`]) {
 				setFetchedChats(`${activeChat.type}-${activeChat.id}`, true);
 				
@@ -80,7 +73,6 @@ const ChatInterface: React.FC = () => {
 		}
 	}, [activeChat, fetchMessages, fetchedChats, setFetchedChats]);
 
-	// Auto scroll to bottom on new messages or when chat changes
 	useEffect(() => {
 		if (activeChat.id) {
 			setTimeout(() => {
@@ -89,7 +81,6 @@ const ChatInterface: React.FC = () => {
 		}
 	}, [activeChat.id, messages.length]);
 
-	// Filter messages based on the active chat and chat type
 	const filteredMessages = messages.filter((msg) => {
 		if (chatType === "private" && activeChat.id) {
 			return (
@@ -97,16 +88,13 @@ const ChatInterface: React.FC = () => {
 				(msg.fromId === clientId && msg.toId === activeChat.id)
 			);
 		} else if (chatType === "group" && activeChat.id) {
-			// Group messages
 			return msg.toId === activeChat.id && !msg.isPrivate;
 		}
 		return false;
 	});
 
-	// Sort messages by timestamp
-    const sortedMessages = [...filteredMessages].sort((a, b) => a.timestamp - b.timestamp);
-	
-	// Generate recent private chats based on messages
+	const sortedMessages = [...filteredMessages].sort((a, b) => a.timestamp - b.timestamp);
+
 	const recentPrivateChats = React.useMemo(() => {
 		const chatMap = new Map<string, {
 			id: string;
@@ -119,19 +107,15 @@ const ChatInterface: React.FC = () => {
 			lastMessageSender?: string;
 		}>();
 		
-		// Use recentPrivateMessages for more efficient last message tracking
 		Object.values(recentPrivateMessages).forEach(msg => {
 			if (msg.isPrivate) {
 				let chatId;
 				let chatName;
 				
-				// If the message is from the current user to someone else
 				if (msg.fromId === clientId) {
 					chatId = msg.toId;
 					chatName = msg.to;
-				}
-				// If the message is from someone else to the current user
-				else if (msg.toId === clientId) {
+				} else if (msg.toId === clientId) {
 					chatId = msg.fromId;
 					chatName = msg.from;
 				}
@@ -154,13 +138,11 @@ const ChatInterface: React.FC = () => {
 			}
 		});
 		
-		// Convert map to array and sort by most recent
 		return Array.from(chatMap.values()).sort(
 			(a, b) => (b.lastMessage?.timestamp || 0) - (a.lastMessage?.timestamp || 0)
 		);
 	}, [recentPrivateMessages, clientId]);
 
-	// Handler for sending messages
 	const handleSendMessage = (content: string, image?: string) => {
 		if (!activeChat.id) return;
 
@@ -172,7 +154,6 @@ const ChatInterface: React.FC = () => {
 			image
 		);
 
-		// Show toast for sent message
 		toast({
 			title: "Message Sent",
 			description: `To: ${activeChat.name}`,
@@ -180,7 +161,6 @@ const ChatInterface: React.FC = () => {
 		});
 	};
 
-	// Handler for creating groups
 	const handleCreateGroup = (e: React.FormEvent) => {
 		e.preventDefault();
 
@@ -199,8 +179,7 @@ const ChatInterface: React.FC = () => {
 			});
 		}
 	};
-	
-	// Handler for rename group
+
 	const handleRenameGroup = (e: React.FormEvent) => {
 		e.preventDefault();
 
@@ -211,7 +190,6 @@ const ChatInterface: React.FC = () => {
 		setShowRenameGroupDialog(false);
 	};
 
-	// Handle clear chat
 	const handleClearChat = () => {
 		clearChatMessages();
 		toast({
@@ -221,14 +199,12 @@ const ChatInterface: React.FC = () => {
 		});
 	};
 
-	// Handle scroll to load more messages
 	const handleScroll = (event: React.UIEvent<HTMLDivElement>) => {
 		const target = event.target as HTMLDivElement;
 		const scrollContainer = target.querySelector('[data-radix-scroll-area-viewport]');
 		
 		if (!scrollContainer || isLoadingMessages || !activeChat.id) return;
 		
-		// Load more messages if scrolled to top (or near)
 		if (scrollContainer.scrollTop < 20) {
 			console.log("Scrolled to top, loading more messages");
 			const beforeTimestamp = oldestMessageTimestamp[activeChat.id];
@@ -241,25 +217,43 @@ const ChatInterface: React.FC = () => {
 		}
 	};
 
-	// Check if current user is creator of active group
 	const isCreatorOfActiveGroup = activeChat.type === "group" && 
 								  availableGroups.some(g => 
 									g.id === activeChat.id && 
 									(g.creator === clientName || g.creatorId === clientId));
 
-	// Filter out the current user from the connected clients list
+	const handleGroupMemberClick = (member: Client) => {
+		const existingChat = recentPrivateChats.find(chat => chat.id === member.id);
+		
+		if (existingChat) {
+			setActiveChat(existingChat);
+		} else {
+			setActiveChat({
+				id: member.id,
+				name: member.name,
+				type: "private"
+			});
+		}
+		
+		setChatType("private");
+	};
+
 	const otherClients = connectedClients.filter((client) => client.name !== clientName && client.id !== clientId);
 	
-	// Get group members for active chat
 	const activeGroupMembers = activeChat.type === "group" 
 		? availableGroups.find(g => g.id === activeChat.id)?.members || []
 		: [];
 
-	// Sort users alphabetically
+	const activeGroupMemberObjects = activeChat.type === "group"
+		? [...connectedClients, ...offlineClients].filter(client => 
+				availableGroups.find(g => g.id === activeChat.id)?.memberIds?.includes(client.id) ||
+				availableGroups.find(g => g.id === activeChat.id)?.members?.includes(client.name)
+			)
+		: [];
+
 	const sortedOtherClients = [...otherClients].sort((a, b) => a.name.localeCompare(b.name));
 	const sortedOfflineClients = [...(offlineClients || [])].sort((a, b) => a.name.localeCompare(b.name));
 
-	// Separate joined and available groups
 	const joinedGroups = availableGroups.filter(group => 
 		group.memberIds?.includes(clientId) || group.members?.includes(clientName)
 	);
@@ -268,7 +262,6 @@ const ChatInterface: React.FC = () => {
 		!group.memberIds?.includes(clientId) && !group.members?.includes(clientName)
 	);
 
-	// Sort groups by last message timestamp if available
 	const sortedJoinedGroups = [...joinedGroups].sort((a, b) => {
 		if (a.lastMessage && b.lastMessage) {
 			return b.lastMessage.timestamp - a.lastMessage.timestamp;
@@ -297,7 +290,6 @@ const ChatInterface: React.FC = () => {
 				</div>
 
 				<div className="flex flex-1 min-h-0">
-					{/* Sidebar */}
 					<div className="w-1/3 border-r p-4 flex flex-col">
 						<div className="flex justify-between items-center mb-3">
 							<h3 className="text-sm font-semibold">{chatType === "private" ? "Users" : "Groups"}</h3>
@@ -328,7 +320,6 @@ const ChatInterface: React.FC = () => {
 								</Dialog>
 							)}
 
-							{/* Clear chat button */}
 							<Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-lime-600/10 transition-colors" onClick={handleClearChat}>
 								<RefreshCw size={16} />
 							</Button>
@@ -346,6 +337,7 @@ const ChatInterface: React.FC = () => {
 									type: "private"
 								})}
 								onChatSelect={setActiveChat}
+								currentUserId={clientId}
 							/>
 						) : (
 							<ScrollArea className="flex-1">
@@ -395,7 +387,6 @@ const ChatInterface: React.FC = () => {
 						)}
 					</div>
 
-					{/* Chat Area */}
 					<div className="flex-1 flex flex-col">
 						<ChatHeader 
 							activeChat={activeChat}
@@ -409,6 +400,24 @@ const ChatInterface: React.FC = () => {
 							onDeleteGroup={() => deleteGroup(activeChat)}
 							onLeaveGroup={() => leaveGroup(activeChat)}
 						/>
+
+						{activeChat.id && activeChat.type === "group" && (
+							<div className="border-b px-4 py-2">
+								<div className="flex flex-wrap gap-1">
+									<span className="text-xs text-muted-foreground">Members:</span>
+									{activeGroupMemberObjects.map((member) => (
+										<button
+											key={member.id}
+											onClick={() => handleGroupMemberClick(member)}
+											className="text-xs px-2 py-1 bg-secondary rounded-full hover:bg-primary/10 transition-colors"
+										>
+											{member.name}
+											{member.name === clientName && " [You]"}
+										</button>
+									))}
+								</div>
+							</div>
+						)}
 
 						{!activeChat.id && (
 							<div className="h-full flex items-center justify-center">
@@ -456,6 +465,10 @@ const ChatInterface: React.FC = () => {
 									</div>
 								</div>
 								
+								<div className="px-4 h-6 text-xs text-muted-foreground">
+									{/* This would show typing indicators */}
+								</div>
+								
 								<MessageInput 
 									activeChat={activeChat}
 									onSendMessage={handleSendMessage}
@@ -466,7 +479,6 @@ const ChatInterface: React.FC = () => {
 				</div>
 			</Tabs>
 
-			{/* Rename Group Dialog */}
 			<Dialog open={showRenameGroupDialog} onOpenChange={setShowRenameGroupDialog}>
 				<DialogContent>
 					<DialogHeader>

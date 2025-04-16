@@ -52,6 +52,9 @@ export const createSocketSlice: StateCreator<
 			if (clientName && clientId) {
 				socket.emit("updateClient", { name: clientName, id: clientId });
 			}
+      
+      // Request recent messages on connect
+      socket.emit("fetchRecentMessages");
 		});
 
 		socket.on("disconnect", () => {
@@ -86,6 +89,7 @@ export const createSocketSlice: StateCreator<
 				messages: [...state.messages, message],
 			}));
 
+			// Handle group messages
 			if (!message.isPrivate) {
 				set((state) => ({
 					availableGroups: state.availableGroups.map((group) =>
@@ -104,6 +108,22 @@ export const createSocketSlice: StateCreator<
 							: group
 					),
 				}));
+			} 
+			// Handle private messages real-time ordering
+			else {
+        // For private messages, update the recentPrivateMessages
+        set((state) => {
+          const chatId = message.fromId === state.clientId ? message.toId! : message.fromId;
+          return {
+            recentPrivateMessages: {
+              ...state.recentPrivateMessages,
+              [chatId]: message
+            }
+          };
+        });
+        
+        // Refresh the recent chats after receiving a private message
+        socket.emit("fetchRecentMessages");
 			}
 		});
 
@@ -155,6 +175,18 @@ export const createSocketSlice: StateCreator<
 				};
 			});
 		});
+    
+    socket.on("userTyping", ({ userId, chatId, isTyping }: { userId: string; chatId: string; isTyping: boolean }) => {
+      // Handle user typing indicator
+      console.log(`User ${userId} is ${isTyping ? 'typing' : 'not typing'} in chat ${chatId}`);
+      // This could update a state to show typing indicators in the UI
+    });
+    
+    socket.on("userPresenceChanged", ({ userId, isOnline }: { userId: string; isOnline: boolean }) => {
+      // Handle user presence changes
+      console.log(`User ${userId} is now ${isOnline ? 'online' : 'offline'}`);
+      // This will be handled by the clients/offlineClients updates
+    });
 
 		socket.onAny((event, ...args) => {
 			console.log(`Received event: ${event}`, args);

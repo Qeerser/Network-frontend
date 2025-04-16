@@ -8,13 +8,15 @@ interface RecentChatsProps {
   activeChat: Chat;
   onlineUsers: Client[];
   onChatSelect: (chat: Chat) => void;
+  currentUserId: string;
 }
 
 const RecentChats: React.FC<RecentChatsProps> = ({ 
   recentChats, 
   activeChat, 
   onlineUsers,
-  onChatSelect 
+  onChatSelect,
+  currentUserId
 }) => {
   if (recentChats.length === 0) {
     return (
@@ -48,7 +50,10 @@ const RecentChats: React.FC<RecentChatsProps> = ({
           }`}></div>
           <div className="flex-1 min-w-0">
             <div className="flex justify-between">
-              <span className="font-medium">{chat.name}</span>
+              <span className="font-medium">
+                {chat.name}
+                {chat.id === currentUserId && <span className="ml-1 text-xs text-muted-foreground">[You]</span>}
+              </span>
               {chat.lastMessage?.timestamp && (
                 <span className="text-xs text-muted-foreground">
                   {formatDistanceToNow(new Date(chat.lastMessage.timestamp), { addSuffix: true })}

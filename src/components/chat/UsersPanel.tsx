@@ -14,6 +14,7 @@ interface UsersPanelProps {
   recentPrivateChats: Chat[];
   onUserSelect: (user: Client) => void;
   onChatSelect: (chat: Chat) => void;
+  currentUserId: string; // Added to identify the current user
 }
 
 const UsersPanel: React.FC<UsersPanelProps> = ({
@@ -22,9 +23,10 @@ const UsersPanel: React.FC<UsersPanelProps> = ({
   activeChat,
   recentPrivateChats,
   onUserSelect,
-  onChatSelect
+  onChatSelect,
+  currentUserId
 }) => {
-  const [usersTab, setUsersTab] = useState<string>("all");
+  const [usersTab, setUsersTab] = useState<string>("recent"); // Default to recent tab
   
   return (
     <div className="h-full flex flex-col">
@@ -45,6 +47,7 @@ const UsersPanel: React.FC<UsersPanelProps> = ({
               activeChat={activeChat}
               onlineUsers={onlineUsers}
               onChatSelect={onChatSelect}
+              currentUserId={currentUserId}
             />
           </TabsContent>
           
@@ -54,6 +57,7 @@ const UsersPanel: React.FC<UsersPanelProps> = ({
               offlineUsers={offlineUsers}
               activeChat={activeChat}
               onUserSelect={onUserSelect}
+              currentUserId={currentUserId}
             />
           </TabsContent>
         </ScrollArea>

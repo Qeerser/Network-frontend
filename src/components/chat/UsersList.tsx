@@ -10,6 +10,7 @@ interface UsersListProps {
   offlineUsers: Client[];
   activeChat: Chat;
   onUserSelect: (user: Client) => void;
+  currentUserId: string;
 }
 
 const MAX_DISPLAY_USERS = 5; // Maximum number of users to display before collapsing
@@ -18,7 +19,8 @@ const UsersList: React.FC<UsersListProps> = ({
   onlineUsers, 
   offlineUsers, 
   activeChat, 
-  onUserSelect 
+  onUserSelect,
+  currentUserId
 }) => {
   const [showAllOnline, setShowAllOnline] = useState(false);
   const [showAllOffline, setShowAllOffline] = useState(false);
@@ -45,6 +47,7 @@ const UsersList: React.FC<UsersListProps> = ({
                 isActive={activeChat.id === client.id && activeChat.type === "private"}
                 isOnline={true}
                 onClick={() => onUserSelect(client)}
+                isCurrentUser={client.id === currentUserId}
               />
             ))
           ) : (
@@ -86,6 +89,7 @@ const UsersList: React.FC<UsersListProps> = ({
                 isActive={activeChat.id === client.id && activeChat.type === "private"}
                 isOnline={false}
                 onClick={() => onUserSelect(client)}
+                isCurrentUser={client.id === currentUserId}
               />
             ))}
           </ul>
