@@ -24,7 +24,7 @@ const UsersPanel: React.FC<UsersPanelProps> = ({
   onUserSelect,
   onChatSelect
 }) => {
-  const [usersTab, setUsersTab] = useState<string>("recent");
+  const [usersTab, setUsersTab] = useState<string>("all");
   
   return (
     <div className="h-full flex flex-col">

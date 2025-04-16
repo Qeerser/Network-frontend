@@ -46,7 +46,7 @@ const ChatInterface: React.FC = () => {
 		recentPrivateMessages,
 	} = useChatStore();
 
-	const [chatType, setChatType] = useState<"private" | "group">("group");
+	const [chatType, setChatType] = useState<"private" | "group">("private");
 	const [newGroupName, setNewGroupName] = useState("");
 	const [showNewGroupDialog, setShowNewGroupDialog] = useState(false);
 	const [showRenameGroupDialog, setShowRenameGroupDialog] = useState(false);
@@ -284,7 +284,7 @@ const ChatInterface: React.FC = () => {
 
 	return (
 		<div className="flex flex-col h-full border rounded-md overflow-hidden">
-			<Tabs defaultValue="group" className="w-full h-full flex flex-col" onValueChange={handleTabChange}>
+			<Tabs defaultValue="private" className="w-full h-full flex flex-col" onValueChange={handleTabChange}>
 				<div className="border-b">
 					<TabsList className="grid w-full grid-cols-2">
 						<TabsTrigger value="private" className="flex items-center gap-2">
