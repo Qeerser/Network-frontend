@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { Chat, Client, useChatStore } from "@/state/store";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -413,7 +412,12 @@ const ChatInterface: React.FC = () => {
 											className="text-xs px-2 py-1 bg-secondary rounded-full hover:bg-primary/10 transition-colors"
 										>
 											{member.name}
-											{member.name === clientName && " [You]"}
+											{member.id === clientId && (
+												<span className="ml-1 text-xs">
+                          <Flag className="h-3 w-3 inline mr-0.5" />
+                          [You]
+                        </span>
+											)}
 										</button>
 									))}
 								</div>

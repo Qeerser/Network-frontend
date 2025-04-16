@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { Client } from '@/state/store';
+import { Flag } from 'lucide-react';
 
 interface UserItemProps {
   client: Client;
@@ -23,7 +24,12 @@ const UserItem: React.FC<UserItemProps> = ({ client, isActive, isOnline, onClick
       <span className={`h-2 w-2 rounded-full ${isOnline ? "bg-green-500" : "bg-gray-400"}`}></span>
       <div className="flex items-center">
         <span>{client.name}</span>
-        {isCurrentUser && <span className="ml-1 text-xs text-muted-foreground">[You]</span>}
+        {isCurrentUser && (
+          <span className="ml-1 flex items-center text-xs text-muted-foreground">
+            <Flag className="h-3 w-3 mr-0.5" />
+            [You]
+          </span>
+        )}
       </div>
     </li>
   );
