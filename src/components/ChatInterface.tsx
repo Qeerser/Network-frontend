@@ -129,7 +129,7 @@ const ChatInterface: React.FC = () => {
 				
 				if (chatId && chatName) {
 					const existingChat = chatMap.get(chatId);
-					if (!existingChat || existingChat.lastMessage?.timestamp! < msg.timestamp) {
+					if (!existingChat || (existingChat.lastMessage?.timestamp ?? -Infinity) < msg.timestamp) {
 						chatMap.set(chatId, {
 							id: chatId,
 							name: chatName,

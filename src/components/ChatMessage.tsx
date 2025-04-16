@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { ChatMessage as MessageType } from '@/state/store';
 import { Pencil, Smile, CheckCheck } from 'lucide-react';
 import { formatRelative } from 'date-fns';
+import EmojiPicker from './EmojiPicker';
 
 interface ChatMessageProps {
   message: MessageType;
@@ -66,10 +67,10 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
               <div className={`absolute z-10 ${isOwnMessage ? 'left-6' : 'right-6'} top-0`}>
                 <div className="emoji-picker-wrapper">
                   {/* Using custom render props for EmojiPicker */}
-                  {React.createElement(require('@/components/EmojiPicker').default, {
-                    onEmojiSelect: handleReaction,
-                    onClose: () => setShowEmojiPicker(false)
-                  })}
+                  <EmojiPicker 
+                    onEmojiSelect={handleReaction}
+                    onClose={() => setShowEmojiPicker(false)}
+                  ></EmojiPicker>
                 </div>
               </div>
             )}

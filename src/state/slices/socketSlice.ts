@@ -1,12 +1,12 @@
 
 import { StateCreator } from "zustand";
-import { io } from "socket.io-client";
+import { io , Socket} from "socket.io-client";
 import { ChatState, ChatMessage, Client, ChatGroup } from "../types/chatTypes";
 import { useAuthStore } from "../authStore";
 import { getConfig } from "@/config";
 
 export interface SocketSlice {
-	socket: null | any;
+	socket: Socket | null ;
 	isConnected: boolean;
 	connect: () => void;
 	disconnect: () => void;
