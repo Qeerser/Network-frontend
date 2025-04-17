@@ -148,7 +148,7 @@ export const createSocketSlice: StateCreator<
 			}));
 		});
 
-		socket.on("messageReacted", ({ messageId, reaction, reactedBy }: { messageId: string; reaction: string; reactedBy: { id: string; name: string } }) => {
+		socket.on("messageReacted", ({ messageId, reaction, reactedBy }: { messageId: string; reaction: string; reactedBy: { id: string; name: string; timestamp: number } }) => {
 			set((state) => ({
 				messages: state.messages.map((message) =>
 					message.id === messageId
@@ -156,7 +156,10 @@ export const createSocketSlice: StateCreator<
 								...message,
 								reactions: {
 									...message.reactions,
-									[reaction]: [...(message.reactions?.[reaction] || []), reactedBy]
+									[reaction]: [...(message.reactions?.[reaction] || []), {
+                    ...reactedBy,
+                    timestamp: reactedBy.timestamp || Date.now() // Ensure timestamp exists
+                  }]
 								}
 						  }
 						: message

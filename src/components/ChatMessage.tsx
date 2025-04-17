@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { ChatMessage as MessageType } from '@/state/store';
 import { Pencil, Smile, CheckCheck, X } from 'lucide-react';
@@ -54,8 +55,20 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
   const messageDate = new Date(message.timestamp);
   const formattedDate = formatRelative(messageDate, new Date());
 
-  const reactionsArray = message.reactions 
-    ? Object.entries(message.reactions)
+  // Make sure all reactions have timestamp
+  const reactionsWithTimestamps = message.reactions ? 
+    Object.entries(message.reactions).reduce((acc, [emoji, users]) => {
+      const validUsers = users.map(user => ({
+        id: user.id,
+        name: user.name,
+        timestamp: user.timestamp || message.timestamp
+      }));
+      acc[emoji] = validUsers;
+      return acc;
+    }, {} as Record<string, Array<{id: string; name: string; timestamp: number}>>) : {};
+  
+  const reactionsArray = reactionsWithTimestamps 
+    ? Object.entries(reactionsWithTimestamps)
       .map(([emoji, users]) => ({ 
         emoji, 
         users: users.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))
@@ -166,7 +179,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
             </DialogTitle>
           </DialogHeader>
           <ScrollArea className="max-h-[300px] overflow-auto">
-            {selectedReaction && message.reactions[selectedReaction]?.map((user) => (
+            {selectedReaction && message.reactions && message.reactions[selectedReaction]?.map((user) => (
               <div
                 key={user.id}
                 className="flex items-center justify-between p-2 hover:bg-accent rounded-md"

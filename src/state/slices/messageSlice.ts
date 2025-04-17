@@ -53,6 +53,7 @@ export const createMessageSlice: StateCreator<
 			toId,
 			timestamp: Date.now(),
 			image,
+			reactions: {}, // Initialize empty reactions object
 		};
 
 		set((state) => ({
@@ -114,7 +115,7 @@ export const createMessageSlice: StateCreator<
 			return;
 		}
 
-		const userReaction = { id: clientId, name: clientName };
+		const userReaction = { id: clientId, name: clientName, timestamp: Date.now() };
         
         // Check if this reaction already exists for this user
         const hasExistingReaction = messageToReact.reactions && 
