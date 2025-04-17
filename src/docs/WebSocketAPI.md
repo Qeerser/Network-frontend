@@ -34,7 +34,7 @@ This document outlines the WebSocket events used for communication between clien
 ## Message Reactions
 
 - `reactToMessage`: Client reacts to a message
-  - Payload: `{ messageId: string, reaction: string }`
+  - Payload: `{ messageId: string, reaction: string, previousReaction: string | null }`
 - `messageReacted`: Server broadcasts a message reaction
   - Payload: 
     ```typescript
@@ -45,7 +45,8 @@ This document outlines the WebSocket events used for communication between clien
         id: string, 
         name: string,
         timestamp: number 
-      } 
+      },
+      previousReaction: string | null
     }
     ```
 - `removeReaction`: Client removes a reaction from a message

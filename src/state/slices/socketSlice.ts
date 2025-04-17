@@ -1,4 +1,3 @@
-
 import { StateCreator } from "zustand";
 import { io, Socket } from "socket.io-client";
 import { ChatState, ChatMessage, Client, ChatGroup } from "../types/chatTypes";
@@ -140,15 +139,21 @@ export const createSocketSlice: StateCreator<
 			}
 		});
 
-		socket.on("messageEdited", ({ messageId, newContent, editedBy }: { messageId: string; newContent: string; editedBy: string }) => {
-			set((state) => ({
-				messages: state.messages.map((message) =>
-					message.id === messageId ? { ...message, content: newContent, edited: true, editedBy } : message
-				),
-			}));
-		});
-
-		socket.on("messageReacted", ({ messageId, reaction, reactedBy }: { messageId: string; reaction: string; reactedBy: { id: string; name: string; timestamp: number } }) => {
+		socket.on("messageReacted", ({ 
+			messageId, 
+			reaction, 
+			reactedBy,
+			previousReaction 
+		}: { 
+			messageId: string; 
+			reaction: string; 
+			reactedBy: { 
+				id: string; 
+				name: string; 
+				timestamp: number 
+			};
+			previousReaction: string | null;
+		}) => {
 			set((state) => ({
 				messages: state.messages.map((message) =>
 					message.id === messageId
@@ -156,10 +161,18 @@ export const createSocketSlice: StateCreator<
 								...message,
 								reactions: {
 									...message.reactions,
-									[reaction]: [...(message.reactions?.[reaction] || []), {
-                    ...reactedBy,
-                    timestamp: reactedBy.timestamp || Date.now() // Ensure timestamp exists
-                  }]
+									// Remove previous reaction if it existed
+									...(previousReaction && {
+										[previousReaction]: (message.reactions[previousReaction] || [])
+											.filter(user => user.id !== reactedBy.id)
+									}),
+									// Add new reaction or remove if toggling same reaction
+									[reaction]: previousReaction === reaction
+										? (message.reactions[reaction] || []).filter(user => user.id !== reactedBy.id)
+										: [...(message.reactions[reaction] || []), {
+											...reactedBy,
+											timestamp: reactedBy.timestamp || Date.now()
+										}]
 								}
 						  }
 						: message

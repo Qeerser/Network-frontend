@@ -1,4 +1,3 @@
-
 import { StateCreator } from "zustand";
 import { v4 as uuidv4 } from "uuid";
 import { toast } from "@/hooks/use-toast";
@@ -117,10 +116,13 @@ export const createMessageSlice: StateCreator<
 
 		const userReaction = { id: clientId, name: clientName, timestamp: Date.now() };
         
-        // Check if this reaction already exists for this user
-        const hasExistingReaction = messageToReact.reactions && 
-            messageToReact.reactions[reaction] &&
-            messageToReact.reactions[reaction].some(user => user.id === clientId);
+        // Find if the user has any existing reaction on this message
+        let existingReaction: string | null = null;
+        Object.entries(messageToReact.reactions || {}).forEach(([emoji, users]) => {
+            if (users.some(user => user.id === clientId)) {
+                existingReaction = emoji;
+            }
+        });
         
         set((state) => ({
             messages: state.messages.map((message) =>
@@ -129,9 +131,16 @@ export const createMessageSlice: StateCreator<
                         ...message,
                         reactions: {
                             ...message.reactions,
-                            [reaction]: hasExistingReaction
-                                ? (message.reactions?.[reaction] || []).filter(user => user.id !== clientId)
-                                : [...(message.reactions?.[reaction] || []), userReaction]
+                            // Remove existing reaction if user had one
+                            ...(existingReaction && {
+                                [existingReaction]: message.reactions[existingReaction].filter(
+                                    user => user.id !== clientId
+                                )
+                            }),
+                            // Add new reaction
+                            [reaction]: existingReaction === reaction
+                                ? message.reactions[reaction].filter(user => user.id !== clientId) // Remove if clicking same reaction
+                                : [...(message.reactions[reaction] || []), userReaction]
                         }
                     }
                     : message
@@ -139,7 +148,11 @@ export const createMessageSlice: StateCreator<
         }));
 
 		if (socket && socket.connected) {
-			socket.emit("reactToMessage", { messageId, reaction });
+			socket.emit("reactToMessage", { 
+				messageId, 
+				reaction,
+				previousReaction: existingReaction 
+			});
 		}
 	},
 
