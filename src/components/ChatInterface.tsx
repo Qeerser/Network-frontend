@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from "react";
 import { Chat, Client, useChatStore } from "@/state/store";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -223,16 +224,22 @@ const ChatInterface: React.FC = () => {
 									(g.creator === clientName || g.creatorId === clientId));
 
 	const handleGroupMemberClick = (member: Client) => {
+		// Switch to private chat tab when clicking a group member
 		setChatType("private");
 		
-		const existingChat = recentPrivateChats.find(chat => chat.id === member.id);
+		// If clicking on the currently active user, clear the selection
+		if (activeChat.id === member.id && activeChat.type === "private") {
+			clearActiveChat();
+			return;
+		}
 		
-		if (existingChat) {
-			setActiveChat(existingChat);
-		} else {
+		// Find the client from either online or offline users
+		const clientMatch = [...connectedClients, ...offlineClients].find(client => client.id === member.id);
+		
+		if (clientMatch) {
 			setActiveChat({
-				id: member.id,
-				name: member.name,
+				id: clientMatch.id,
+				name: clientMatch.name,
 				type: "private"
 			});
 		}
@@ -341,12 +348,26 @@ const ChatInterface: React.FC = () => {
 								offlineUsers={sortedOfflineClients}
 								activeChat={activeChat}
 								recentPrivateChats={recentPrivateChats}
-								onUserSelect={(client) => setActiveChat({
-									id: client.id,
-									name: client.name,
-									type: "private"
-								})}
-								onChatSelect={setActiveChat}
+								onUserSelect={(client) => {
+									// If clicking on the current active user, clear the selection
+									if (activeChat.id === client.id && activeChat.type === "private") {
+										clearActiveChat();
+									} else {
+										setActiveChat({
+											id: client.id,
+											name: client.name,
+											type: "private"
+										});
+									}
+								}}
+								onChatSelect={(chat) => {
+									// If clicking on the current active chat, clear the selection
+									if (activeChat.id === chat.id && activeChat.type === chat.type) {
+										clearActiveChat();
+									} else {
+										setActiveChat(chat);
+									}
+								}}
 								currentUserId={clientId}
 							/>
 						) : (

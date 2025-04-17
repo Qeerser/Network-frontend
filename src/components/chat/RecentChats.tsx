@@ -2,6 +2,7 @@
 import React from 'react';
 import { Chat, Client } from '@/state/store';
 import { formatDistanceToNow } from 'date-fns';
+import { Flag } from 'lucide-react';
 
 interface RecentChatsProps {
   recentChats: Chat[];
@@ -31,12 +32,22 @@ const RecentChats: React.FC<RecentChatsProps> = ({
     return onlineUsers.some(user => user.id === userId);
   };
 
+  // Handle click - if clicking on the current active chat, clear it
+  const handleChatClick = (chat: Chat) => {
+    if (activeChat.id === chat.id && activeChat.type === chat.type) {
+      // Clear active chat by passing an empty chat
+      onChatSelect({ id: "", name: "", type: null });
+    } else {
+      onChatSelect(chat);
+    }
+  };
+
   return (
     <div className="space-y-1">
       {recentChats.map((chat) => (
         <div
           key={`${chat.type}-${chat.id}`}
-          onClick={() => onChatSelect(chat)}
+          onClick={() => handleChatClick(chat)}
           className={`p-2 rounded-md cursor-pointer flex items-start gap-2 transition-colors ${
             activeChat.id === chat.id && activeChat.type === chat.type
               ? "bg-lime-600/20"
@@ -52,7 +63,11 @@ const RecentChats: React.FC<RecentChatsProps> = ({
             <div className="flex justify-between">
               <span className="font-medium">
                 {chat.name}
-                {chat.id === currentUserId && <span className="ml-1 text-xs text-muted-foreground">[You]</span>}
+                {chat.id === currentUserId && (
+                  <span className="ml-1 text-xs text-muted-foreground">
+                    <Flag className="h-3 w-3 inline mr-0.5" />[You]
+                  </span>
+                )}
               </span>
               {chat.lastMessage?.timestamp && (
                 <span className="text-xs text-muted-foreground">
