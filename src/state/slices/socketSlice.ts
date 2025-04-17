@@ -225,4 +225,4 @@ export const createSocketSlice: StateCreator<
 			set({ socket: null, isConnected: false });
 		}
 	},
-}));
+});
