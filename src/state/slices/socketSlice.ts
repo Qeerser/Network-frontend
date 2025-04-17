@@ -88,8 +88,14 @@ export const createSocketSlice: StateCreator<
 		});
 
 		socket.on("messageReceived", (message: ChatMessage) => {
+			// Ensure the message has a reactions object
+			const messageWithReactions = {
+				...message,
+				reactions: message.reactions || {}
+			};
+			
 			set((state) => ({
-				messages: [...state.messages, message],
+				messages: [...state.messages, messageWithReactions],
 			}));
 
 			// Handle group messages
@@ -155,28 +161,40 @@ export const createSocketSlice: StateCreator<
 			previousReaction: string | null;
 		}) => {
 			set((state) => ({
-				messages: state.messages.map((message) =>
-					message.id === messageId
-						? {
-								...message,
-								reactions: {
-									...message.reactions,
-									// Remove previous reaction if it existed
-									...(previousReaction && {
-										[previousReaction]: (message.reactions[previousReaction] || [])
-											.filter(user => user.id !== reactedBy.id)
-									}),
-									// Add new reaction or remove if toggling same reaction
-									[reaction]: previousReaction === reaction
-										? (message.reactions[reaction] || []).filter(user => user.id !== reactedBy.id)
-										: [...(message.reactions[reaction] || []), {
-											...reactedBy,
-											timestamp: reactedBy.timestamp || Date.now()
-										}]
-								}
-						  }
-						: message
-				),
+				messages: state.messages.map((message) => {
+					if (message.id !== messageId) return message;
+					
+					// Initialize reactions if undefined
+					const reactions = message.reactions || {};
+					const newReactions = { ...reactions };
+					
+					// Remove previous reaction if it existed
+					if (previousReaction && reactions[previousReaction]) {
+						newReactions[previousReaction] = (reactions[previousReaction] || [])
+							.filter(user => user.id !== reactedBy.id);
+						
+						// Clean up empty reaction arrays
+						if (newReactions[previousReaction].length === 0) {
+							delete newReactions[previousReaction];
+						}
+					}
+					
+					// Add new reaction if not toggling same reaction
+					if (previousReaction !== reaction) {
+						newReactions[reaction] = [
+							...(reactions[reaction] || []),
+							{
+								...reactedBy,
+								timestamp: reactedBy.timestamp || Date.now()
+							}
+						];
+					}
+					
+					return {
+						...message,
+						reactions: newReactions
+					};
+				}),
 			}));
 		});
 

@@ -1,3 +1,4 @@
+
 import { StateCreator } from "zustand";
 import { v4 as uuidv4 } from "uuid";
 import { toast } from "@/hooks/use-toast";
@@ -52,7 +53,7 @@ export const createMessageSlice: StateCreator<
 			toId,
 			timestamp: Date.now(),
 			image,
-			reactions: {}, // Initialize empty reactions object
+			reactions: {}, // Initialize with empty reactions object
 		};
 
 		set((state) => ({
@@ -116,35 +117,51 @@ export const createMessageSlice: StateCreator<
 
 		const userReaction = { id: clientId, name: clientName, timestamp: Date.now() };
         
+        // Initialize reactions if undefined
+        const messageReactions = messageToReact.reactions || {};
+        
         // Find if the user has any existing reaction on this message
         let existingReaction: string | null = null;
-        Object.entries(messageToReact.reactions || {}).forEach(([emoji, users]) => {
-            if (users.some(user => user.id === clientId)) {
+        Object.entries(messageReactions).forEach(([emoji, users]) => {
+            if (users && users.some(user => user.id === clientId)) {
                 existingReaction = emoji;
             }
         });
         
         set((state) => ({
-            messages: state.messages.map((message) =>
-                message.id === messageId
-                    ? {
-                        ...message,
-                        reactions: {
-                            ...message.reactions,
-                            // Remove existing reaction if user had one
-                            ...(existingReaction && {
-                                [existingReaction]: message.reactions[existingReaction].filter(
-                                    user => user.id !== clientId
-                                )
-                            }),
-                            // Add new reaction
-                            [reaction]: existingReaction === reaction
-                                ? message.reactions[reaction].filter(user => user.id !== clientId) // Remove if clicking same reaction
-                                : [...(message.reactions[reaction] || []), userReaction]
-                        }
+            messages: state.messages.map((message) => {
+                if (message.id !== messageId) return message;
+                
+                // Initialize reactions if undefined
+                const reactions = message.reactions || {};
+                
+                // Create new reactions object
+                const newReactions = { ...reactions };
+                
+                // Remove existing reaction if user had one
+                if (existingReaction) {
+                    newReactions[existingReaction] = (reactions[existingReaction] || [])
+                        .filter(user => user.id !== clientId);
+                    
+                    // Clean up empty reaction arrays
+                    if (newReactions[existingReaction].length === 0) {
+                        delete newReactions[existingReaction];
                     }
-                    : message
-            ),
+                }
+                
+                // Add new reaction if not toggling the same one
+                if (existingReaction !== reaction) {
+                    newReactions[reaction] = [
+                        ...(reactions[reaction] || []), 
+                        userReaction
+                    ];
+                }
+                
+                return {
+                    ...message,
+                    reactions: newReactions
+                };
+            })
         }));
 
 		if (socket && socket.connected) {

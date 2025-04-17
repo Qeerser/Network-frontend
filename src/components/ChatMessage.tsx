@@ -7,6 +7,7 @@ import EmojiPicker from './EmojiPicker';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useChatStore } from '@/state/store';
 
 interface ChatMessageProps {
   message: MessageType;
@@ -30,6 +31,8 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showReactionsDialog, setShowReactionsDialog] = useState(false);
   const [selectedReaction, setSelectedReaction] = useState<string | null>(null);
+  
+  const { clientId } = useChatStore();
   
   const handleSubmitEdit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,26 +58,28 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
   const messageDate = new Date(message.timestamp);
   const formattedDate = formatRelative(messageDate, new Date());
 
-  // Make sure all reactions have timestamp
-  const reactionsWithTimestamps = message.reactions ? 
-    Object.entries(message.reactions).reduce((acc, [emoji, users]) => {
-      const validUsers = users.map(user => ({
-        id: user.id,
-        name: user.name,
-        timestamp: user.timestamp || message.timestamp
-      }));
-      acc[emoji] = validUsers;
-      return acc;
-    }, {} as Record<string, Array<{id: string; name: string; timestamp: number}>>) : {};
+  // Make sure reactions is initialized
+  const reactions = message.reactions || {};
   
-  const reactionsArray = reactionsWithTimestamps 
-    ? Object.entries(reactionsWithTimestamps)
-      .map(([emoji, users]) => ({ 
-        emoji, 
-        users: users.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))
-      }))
-      .filter(r => r.users.length > 0)
-    : [];
+  // Make sure all reactions have timestamp
+  const reactionsWithTimestamps = Object.entries(reactions).reduce((acc, [emoji, users]) => {
+    const validUsers = (users || []).map(user => ({
+      id: user.id,
+      name: user.name,
+      timestamp: user.timestamp || message.timestamp
+    }));
+    acc[emoji] = validUsers;
+    return acc;
+  }, {} as Record<string, Array<{id: string; name: string; timestamp: number}>>);
+  
+  const reactionsArray = Object.entries(reactionsWithTimestamps)
+    .map(([emoji, users]) => ({ 
+      emoji, 
+      users: users.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0)),
+      // Check if the current user has applied this reaction
+      isCurrentUserReaction: users.some(user => user.id === clientId)
+    }))
+    .filter(r => r.users.length > 0);
   
   return (
     <div className={`flex gap-2 relative group ${isOwnMessage ? 'justify-end' : 'justify-start'}`}>
@@ -150,18 +155,33 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
         
         {reactionsArray.length > 0 && (
           <div className="flex flex-wrap gap-1 mt-1 px-2">
-            {reactionsArray.map(({ emoji, users }) => (
-              <button
-                key={emoji}
-                onClick={() => {
-                  setSelectedReaction(emoji);
-                  setShowReactionsDialog(true);
-                }}
-                className="bg-background border rounded-full px-1.5 py-0.5 text-sm flex items-center gap-1 hover:bg-accent transition-colors"
-              >
-                <span>{emoji}</span>
-                <span className="text-xs">{users.length}</span>
-              </button>
+            {reactionsArray.map(({ emoji, users, isCurrentUserReaction }) => (
+              <TooltipProvider key={emoji}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => {
+                        setSelectedReaction(emoji);
+                        setShowReactionsDialog(true);
+                      }}
+                      className={`border rounded-full px-1.5 py-0.5 text-sm flex items-center gap-1 transition-colors ${
+                        isCurrentUserReaction 
+                          ? 'bg-purple-100 dark:bg-purple-900 border-purple-300 dark:border-purple-700' 
+                          : 'bg-background border-border hover:bg-accent'
+                      }`}
+                    >
+                      <span>{emoji}</span>
+                      <span className="text-xs">{users.length}</span>
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>
+                      {users.slice(0, 3).map(u => u.name).join(', ')}
+                      {users.length > 3 ? ` and ${users.length - 3} more` : ''}
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             ))}
           </div>
         )}
@@ -179,10 +199,12 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
             </DialogTitle>
           </DialogHeader>
           <ScrollArea className="max-h-[300px] overflow-auto">
-            {selectedReaction && message.reactions && message.reactions[selectedReaction]?.map((user) => (
+            {selectedReaction && reactions && reactions[selectedReaction]?.map((user) => (
               <div
                 key={user.id}
-                className="flex items-center justify-between p-2 hover:bg-accent rounded-md"
+                className={`flex items-center justify-between p-2 rounded-md ${
+                  user.id === clientId ? 'bg-purple-100 dark:bg-purple-900' : 'hover:bg-accent'
+                }`}
               >
                 <div className="flex items-center gap-2">
                   <div className="font-medium">{user.name}</div>
@@ -190,9 +212,15 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
                     {formatDistanceToNow(user.timestamp || messageDate, { addSuffix: true })}
                   </div>
                 </div>
-                {(user.id === message.fromId || isOwnMessage) && (
+                {(user.id === message.fromId || isOwnMessage || user.id === clientId) && (
                   <button
-                    onClick={() => handleRemoveReaction(selectedReaction)}
+                    onClick={() => {
+                      if (onRemoveReaction) onRemoveReaction(message.id, selectedReaction);
+                      // Close dialog if removing the last reaction
+                      if (reactions[selectedReaction]?.length <= 1) {
+                        setShowReactionsDialog(false);
+                      }
+                    }}
                     className="p-1 hover:bg-destructive/10 rounded-full"
                   >
                     <X className="h-3.5 w-3.5" />
