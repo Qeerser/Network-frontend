@@ -20,7 +20,7 @@ const UserItem: React.FC<UserItemProps> = ({ client, isActive, isOnline, onClick
 
   return (
     <li
-      onClick={handleClick}
+      onClick={() => {if (!isCurrentUser) {handleClick()}}}
       className={`p-2 rounded-md flex items-center gap-2 transition-colors ${
         isActive
           ? "bg-lime-600/20"
@@ -34,7 +34,7 @@ const UserItem: React.FC<UserItemProps> = ({ client, isActive, isOnline, onClick
         <span>{client.name}</span>
         {isCurrentUser && (
           <span className="ml-1 flex items-center text-xs text-muted-foreground">
-            <Flag className="h-3 w-3 mr-0.5" /> [You]
+             [You]
           </span>
         )}
       </div>

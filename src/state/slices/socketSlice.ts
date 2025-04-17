@@ -170,8 +170,16 @@ export const createSocketSlice: StateCreator<
 		socket.on("recentMessages", ({ chats }: { chats: Record<string, ChatMessage> }) => {
 			set((state) => {
 				// Update recent private chats with latest messages
+				console.log("Received recent messages:", chats);
+				if (!chats) {
+					console.warn("Received non-object data for recentMessages event:", chats);
+					return state;
+				}
 				return {
-					recentPrivateMessages: chats
+					recentPrivateMessages: {
+						...state.recentPrivateMessages,
+						...chats,
+					},
 				};
 			});
 		});

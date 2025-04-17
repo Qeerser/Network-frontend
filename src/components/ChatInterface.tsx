@@ -380,7 +380,18 @@ const ChatInterface: React.FC = () => {
 											activeChat={activeChat}
 											clientName={clientName}
 											clientId={clientId}
-											onGroupSelect={setActiveChat}
+											onGroupSelect={(group) => {
+												// If clicking on the current active user, clear the selection
+												if (activeChat.id === group.id && activeChat.type === "group") {
+													clearActiveChat();
+												} else {
+													setActiveChat({
+														id: group.id,
+														name: group.name,
+														type: "group"
+													});
+												}
+											}}
 											onJoinGroup={joinGroup}
 											onLeaveGroup={leaveGroup}
 											onDeleteGroup={deleteGroup}
@@ -434,7 +445,7 @@ const ChatInterface: React.FC = () => {
 							onLeaveGroup={() => leaveGroup(activeChat)}
 						/>
 
-						{activeChat.id && activeChat.type === "group" && (
+						{/* {activeChat.id && activeChat.type === "group" && (
 							<div className="border-b px-4 py-2">
 								<div className="flex flex-wrap gap-1">
 									<span className="text-xs text-muted-foreground">Members:</span>
@@ -447,7 +458,6 @@ const ChatInterface: React.FC = () => {
 											{member.name}
 											{member.id === clientId && (
 												<span className="ml-1 text-xs">
-                          <Flag className="h-3 w-3 inline mr-0.5" />
                           [You]
                         </span>
 											)}
@@ -455,7 +465,7 @@ const ChatInterface: React.FC = () => {
 									))}
 								</div>
 							</div>
-						)}
+						)} */}
 
 						{!activeChat.id && (
 							<div className="h-full flex items-center justify-center">
