@@ -391,6 +391,7 @@ const ChatInterface: React.FC = () => {
 												setShowRenameGroupDialog(true);
 											}}
 											showJoinOnHover={true}
+											onClickGroupMember={handleGroupMemberClick}
 										/>
 									</div>
 								)}
