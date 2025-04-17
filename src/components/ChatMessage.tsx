@@ -1,10 +1,11 @@
-
 import React, { useState } from 'react';
 import { ChatMessage as MessageType } from '@/state/store';
-import { Pencil, Smile, CheckCheck } from 'lucide-react';
-import { formatRelative } from 'date-fns';
+import { Pencil, Smile, CheckCheck, X } from 'lucide-react';
+import { formatRelative, formatDistanceToNow } from 'date-fns';
 import EmojiPicker from './EmojiPicker';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface ChatMessageProps {
   message: MessageType;
@@ -12,6 +13,7 @@ interface ChatMessageProps {
   isInGroup: boolean;
   onEditMessage?: (messageId: string, newContent: string) => void;
   onReactMessage?: (messageId: string, reaction: string) => void;
+  onRemoveReaction?: (messageId: string, reaction: string) => void;
 }
 
 const ChatMessage: React.FC<ChatMessageProps> = ({ 
@@ -19,11 +21,14 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
   isOwnMessage, 
   isInGroup,
   onEditMessage,
-  onReactMessage 
+  onReactMessage,
+  onRemoveReaction
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState(message.content);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showReactionsDialog, setShowReactionsDialog] = useState(false);
+  const [selectedReaction, setSelectedReaction] = useState<string | null>(null);
   
   const handleSubmitEdit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,17 +45,26 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
     }
   };
 
+  const handleRemoveReaction = (reaction: string) => {
+    if (onRemoveReaction) {
+      onRemoveReaction(message.id, reaction);
+    }
+  };
+
   const messageDate = new Date(message.timestamp);
   const formattedDate = formatRelative(messageDate, new Date());
 
-  // Get all reactions as array for easier rendering
   const reactionsArray = message.reactions 
-    ? Object.entries(message.reactions).map(([emoji, users]) => ({ emoji, users }))
+    ? Object.entries(message.reactions)
+      .map(([emoji, users]) => ({ 
+        emoji, 
+        users: users.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))
+      }))
+      .filter(r => r.users.length > 0)
     : [];
   
   return (
     <div className={`flex gap-2 relative group ${isOwnMessage ? 'justify-end' : 'justify-start'}`}>
-      {/* Message actions - positioned above the message for better alignment */}
       <div className={`absolute ${isOwnMessage ? 'right-2' : 'left-2'} -top-6 opacity-0 group-hover:opacity-100 flex gap-1 transition-opacity bg-background/80 rounded-full p-1 shadow-sm z-10`}>
         {onEditMessage && isOwnMessage && (
           <button 
@@ -82,14 +96,12 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
       </div>
       
       <div className={`flex max-w-[75%] flex-col ${isOwnMessage ? 'items-end' : 'items-start'}`}>
-        {/* Message sender name - only show in groups if not own message */}
         {isInGroup && !isOwnMessage && (
           <div className="text-xs font-medium ml-2 mb-0.5 text-lime-600 dark:text-lime-400">
             {message.from}
           </div>
         )}
         
-        {/* Message bubble */}
         <div 
           className={`rounded-2xl px-3 py-2 break-words ${
             isOwnMessage 
@@ -123,32 +135,61 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
           )}
         </div>
         
-        {/* Message reactions - show below the message */}
         {reactionsArray.length > 0 && (
           <div className="flex flex-wrap gap-1 mt-1 px-2">
-            {reactionsArray.filter(r => r.users.length > 0).map(({ emoji, users }) => (
-              <TooltipProvider key={emoji}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="bg-background border rounded-full px-1.5 py-0.5 text-sm flex items-center gap-1 hover:bg-accent cursor-default">
-                      <span>{emoji}</span>
-                      <span className="text-xs">{users.length}</span>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>{users.map(u => u.name).join(', ')}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+            {reactionsArray.map(({ emoji, users }) => (
+              <button
+                key={emoji}
+                onClick={() => {
+                  setSelectedReaction(emoji);
+                  setShowReactionsDialog(true);
+                }}
+                className="bg-background border rounded-full px-1.5 py-0.5 text-sm flex items-center gap-1 hover:bg-accent transition-colors"
+              >
+                <span>{emoji}</span>
+                <span className="text-xs">{users.length}</span>
+              </button>
             ))}
           </div>
         )}
         
-        {/* Message timestamp */}
         <div className="text-xs text-muted-foreground opacity-0 group-hover:opacity-100 px-2 transition-opacity">
           {formattedDate} {isOwnMessage && <CheckCheck className="inline h-3 w-3 ml-1" />}
         </div>
       </div>
+
+      <Dialog open={showReactionsDialog} onOpenChange={setShowReactionsDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              Reactions {selectedReaction && <span>{selectedReaction}</span>}
+            </DialogTitle>
+          </DialogHeader>
+          <ScrollArea className="max-h-[300px] overflow-auto">
+            {selectedReaction && message.reactions[selectedReaction]?.map((user) => (
+              <div
+                key={user.id}
+                className="flex items-center justify-between p-2 hover:bg-accent rounded-md"
+              >
+                <div className="flex items-center gap-2">
+                  <div className="font-medium">{user.name}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {formatDistanceToNow(user.timestamp || messageDate, { addSuffix: true })}
+                  </div>
+                </div>
+                {(user.id === message.fromId || isOwnMessage) && (
+                  <button
+                    onClick={() => handleRemoveReaction(selectedReaction)}
+                    className="p-1 hover:bg-destructive/10 rounded-full"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </div>
+            ))}
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

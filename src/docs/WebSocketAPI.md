@@ -1,4 +1,3 @@
-
 # WebSocket API Documentation
 
 This document outlines the WebSocket events used for communication between client and server in the real-time messaging system.
@@ -37,7 +36,22 @@ This document outlines the WebSocket events used for communication between clien
 - `reactToMessage`: Client reacts to a message
   - Payload: `{ messageId: string, reaction: string }`
 - `messageReacted`: Server broadcasts a message reaction
-  - Payload: `{ messageId: string, reaction: string, reactedBy: { id: string, name: string } }`
+  - Payload: 
+    ```typescript
+    { 
+      messageId: string, 
+      reaction: string, 
+      reactedBy: { 
+        id: string, 
+        name: string,
+        timestamp: number 
+      } 
+    }
+    ```
+- `removeReaction`: Client removes a reaction from a message
+  - Payload: `{ messageId: string, reaction: string }`
+- `reactionRemoved`: Server broadcasts a removed reaction
+  - Payload: `{ messageId: string, reaction: string, userId: string }`
 
 ## Chat History
 
