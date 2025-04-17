@@ -53,8 +53,12 @@ export const createSocketSlice: StateCreator<
 				socket.emit("updateClient", { name: clientName, id: clientId });
 			}
       
-      // Request recent messages on connect
-      socket.emit("fetchRecentMessages");
+      // Request recent messages on connect with optional limit and timestamp
+      const { recentMessagesTimestamp } = get();
+      socket.emit("fetchRecentMessages", { 
+        timestamp: recentMessagesTimestamp || undefined,
+        limit: 20 // Default limit
+      });
 		});
 
 		socket.on("disconnect", () => {
@@ -118,12 +122,21 @@ export const createSocketSlice: StateCreator<
             recentPrivateMessages: {
               ...state.recentPrivateMessages,
               [chatId]: message
-            }
+            },
+            // Update the most recent message timestamp if newer
+            recentMessagesTimestamp: Math.max(
+              state.recentMessagesTimestamp || 0,
+              message.timestamp
+            )
           };
         });
         
-        // Refresh the recent chats after receiving a private message
-        socket.emit("fetchRecentMessages");
+        // Refresh the recent chats with timestamp info
+        const { recentMessagesTimestamp } = get();
+        socket.emit("fetchRecentMessages", { 
+          timestamp: recentMessagesTimestamp,
+          limit: 20
+        });
 			}
 		});
 
@@ -167,10 +180,10 @@ export const createSocketSlice: StateCreator<
 			}));
 		});
 
-		socket.on("recentMessages", ({ chats }: { chats: Record<string, ChatMessage> }) => {
+		socket.on("recentMessages", ({ chats, timestamp }: { chats: Record<string, ChatMessage>; timestamp?: number }) => {
 			set((state) => {
 				// Update recent private chats with latest messages
-				console.log("Received recent messages:", chats);
+				console.log("Received recent messages:", chats, "with timestamp:", timestamp);
 				if (!chats) {
 					console.warn("Received non-object data for recentMessages event:", chats);
 					return state;
@@ -180,6 +193,8 @@ export const createSocketSlice: StateCreator<
 						...state.recentPrivateMessages,
 						...chats,
 					},
+					// Update the most recent message timestamp if provided
+					...(timestamp && { recentMessagesTimestamp: timestamp })
 				};
 			});
 		});
@@ -210,4 +225,4 @@ export const createSocketSlice: StateCreator<
 			set({ socket: null, isConnected: false });
 		}
 	},
-});
+}));

@@ -7,6 +7,7 @@ import { ChatMessage, ChatState, MessageFetchParams } from "../types/chatTypes";
 export interface MessageSlice {
 	messages: ChatMessage[];
 	recentPrivateMessages: Record<string, ChatMessage>;
+	recentMessagesTimestamp: number | null;
 	sendMessage: (content: string, to: string, isPrivate: boolean, toId?: string, image?: string) => void;
 	editMessage: (messageId: string, newContent: string) => void;
 	reactToMessage: (messageId: string, reaction: string) => void;
@@ -16,7 +17,7 @@ export interface MessageSlice {
 	oldestMessageTimestamp: Record<string, number>;
 	setOldestMessageTimestamp: (chatId: string, timestamp: number) => void;
 	fetchMessages: (target: string, type: "private" | "group", limit?: number, before?: number) => void;
-	fetchRecentMessages: () => void;
+	fetchRecentMessages: (limit?: number) => void;
 }
 
 export const createMessageSlice: StateCreator<
@@ -27,6 +28,7 @@ export const createMessageSlice: StateCreator<
 > = (set, get) => ({
 	messages: [],
 	recentPrivateMessages: {},
+	recentMessagesTimestamp: null,
 	isLoadingMessages: false,
 	hasMoreMessages: true,
 	oldestMessageTimestamp: {},
@@ -213,14 +215,17 @@ export const createMessageSlice: StateCreator<
 		});
 	},
 
-	fetchRecentMessages: () => {
-		const { socket } = get();
+	fetchRecentMessages: (limit = 20) => {
+		const { socket, recentMessagesTimestamp } = get();
 
 		if (!socket || !socket.connected) {
 			console.error("Cannot fetch recent messages: Socket not connected");
 			return;
 		}
 
-		socket.emit("fetchRecentMessages");
+		socket.emit("fetchRecentMessages", {
+			timestamp: recentMessagesTimestamp || undefined,
+			limit: limit
+		});
 	}
 });

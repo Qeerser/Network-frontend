@@ -48,9 +48,9 @@ This document outlines the WebSocket events used for communication between clien
 - `messageFetchError`: Server reports an error fetching messages
   - Payload: `string` (error message)
 - `fetchRecentMessages`: Client requests recent conversations
-  - Payload: none
+  - Payload: `{ timestamp?: number, limit?: number }` - Enhanced to include optional timestamp and limit
 - `recentMessages`: Server sends recent conversations
-  - Payload: `{ chats: Record<string, ChatMessage> }`
+  - Payload: `{ chats: Record<string, ChatMessage>, timestamp?: number }` - Enhanced to include the most recent timestamp
 
 ## Group Management
 

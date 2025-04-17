@@ -23,6 +23,7 @@ export const useChatStore = create<ChatState>()((set, get, api) => ({
 	clientName: useAuthStore.getState().currentUser?.username || "Guest",
 	clientId: useAuthStore.getState().currentUser?.id || uuidv4(),
 	recentPrivateMessages: {},
+	recentMessagesTimestamp: null,
 	
 	// Added backward compatibility for socket methods
 	connectSocket: () => get().connect(),

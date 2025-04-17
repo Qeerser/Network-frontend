@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { Chat, Client, useChatStore } from "@/state/store";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -54,7 +53,7 @@ const ChatInterface: React.FC = () => {
 	const messagesEndRef = useRef<HTMLDivElement>(null);
 
 	useEffect(() => {
-		fetchRecentMessages();
+		fetchRecentMessages(30);
 	}, []);
 
 	const handleTabChange = (value: string) => {
@@ -224,16 +223,13 @@ const ChatInterface: React.FC = () => {
 									(g.creator === clientName || g.creatorId === clientId));
 
 	const handleGroupMemberClick = (member: Client) => {
-		// Switch to private chat tab when clicking a group member
 		setChatType("private");
 		
-		// If clicking on the currently active user, clear the selection
 		if (activeChat.id === member.id && activeChat.type === "private") {
 			clearActiveChat();
 			return;
 		}
 		
-		// Find the client from either online or offline users
 		const clientMatch = [...connectedClients, ...offlineClients].find(client => client.id === member.id);
 		
 		if (clientMatch) {
@@ -349,7 +345,6 @@ const ChatInterface: React.FC = () => {
 								activeChat={activeChat}
 								recentPrivateChats={recentPrivateChats}
 								onUserSelect={(client) => {
-									// If clicking on the current active user, clear the selection
 									if (activeChat.id === client.id && activeChat.type === "private") {
 										clearActiveChat();
 									} else {
@@ -361,7 +356,6 @@ const ChatInterface: React.FC = () => {
 									}
 								}}
 								onChatSelect={(chat) => {
-									// If clicking on the current active chat, clear the selection
 									if (activeChat.id === chat.id && activeChat.type === chat.type) {
 										clearActiveChat();
 									} else {
@@ -381,7 +375,6 @@ const ChatInterface: React.FC = () => {
 											clientName={clientName}
 											clientId={clientId}
 											onGroupSelect={(group) => {
-												// If clicking on the current active user, clear the selection
 												if (activeChat.id === group.id && activeChat.type === "group") {
 													clearActiveChat();
 												} else {
@@ -444,28 +437,6 @@ const ChatInterface: React.FC = () => {
 							onDeleteGroup={() => handleDeleteGroup(activeChat)}
 							onLeaveGroup={() => leaveGroup(activeChat)}
 						/>
-
-						{/* {activeChat.id && activeChat.type === "group" && (
-							<div className="border-b px-4 py-2">
-								<div className="flex flex-wrap gap-1">
-									<span className="text-xs text-muted-foreground">Members:</span>
-									{activeGroupMemberObjects.map((member) => (
-										<button
-											key={member.id}
-											onClick={() => handleGroupMemberClick(member)}
-											className="text-xs px-2 py-1 bg-secondary rounded-full hover:bg-primary/10 transition-colors"
-										>
-											{member.name}
-											{member.id === clientId && (
-												<span className="ml-1 text-xs">
-                          [You]
-                        </span>
-											)}
-										</button>
-									))}
-								</div>
-							</div>
-						)} */}
 
 						{!activeChat.id && (
 							<div className="h-full flex items-center justify-center">

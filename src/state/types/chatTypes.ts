@@ -54,6 +54,11 @@ export interface MessageFetchParams {
 	before?: number;
 }
 
+export interface RecentMessagesFetchParams {
+	timestamp?: number;
+	limit?: number;
+}
+
 export interface ChatState {
 	// Client state
 	clientName: string;
@@ -81,6 +86,7 @@ export interface ChatState {
 	// Message state
 	messages: ChatMessage[];
 	recentPrivateMessages: Record<string, ChatMessage>;
+	recentMessagesTimestamp: number | null;
 	sendMessage: (content: string, to: string, isPrivate: boolean, toId?: string, image?: string) => void;
 	editMessage: (messageId: string, newContent: string) => void;
 	reactToMessage: (messageId: string, reaction: string) => void;
@@ -90,7 +96,7 @@ export interface ChatState {
 	oldestMessageTimestamp: Record<string, number>;
 	setOldestMessageTimestamp: (chatId: string, timestamp: number) => void;
 	fetchMessages: (target: string, type: "private" | "group", limit?: number, before?: number) => void;
-	fetchRecentMessages: () => void;
+	fetchRecentMessages: (limit?: number) => void;
 
 	// Socket state
 	socket: Socket | null;
