@@ -23,11 +23,12 @@ export const createClientSlice: StateCreator<
 	offlineClients: [],
 	
 	setClientName: (name: string) => {
+		const { clientId } = get();
 		set({ clientName: name });
 
 		const { socket } = get();
 		if (socket && socket.connected) {
-			socket.emit("updateName", name);
+			socket.emit("updateClient", { name, id: clientId });
 		}
 	},
 	
