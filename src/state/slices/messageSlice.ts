@@ -9,8 +9,9 @@ export interface MessageSlice {
 	recentPrivateMessages: Record<string, ChatMessage>;
 	recentMessagesTimestamp: number | null;
 	sendMessage: (content: string, to: string, isPrivate: boolean, toId?: string, image?: string) => void;
+	isSuccess: boolean;
 	editMessage: (messageId: string, newContent: string) => void;
-	reactToMessage: (messageId: string, reaction: string) => void;
+	reactToMessage: (messageId: string,toId : string, reaction: string) => void;
 	clearChatMessages: () => void;
 	isLoadingMessages: boolean;
 	hasMoreMessages: boolean;
@@ -32,6 +33,7 @@ export const createMessageSlice: StateCreator<
 	isLoadingMessages: false,
 	hasMoreMessages: true,
 	oldestMessageTimestamp: {},
+	isSuccess: true,
 	
 	sendMessage: (content: string, to: string, isPrivate: boolean, toId?: string, image?: string) => {
 		const { socket, clientName, clientId } = get();
@@ -40,7 +42,7 @@ export const createMessageSlice: StateCreator<
 			console.error("Cannot send message: Socket not connected");
 			return;
 		}
-
+		set({ isSuccess: false });
 		const isGroup = isPrivate === false;
 
 		const messageData: ChatMessage = {
@@ -75,6 +77,13 @@ export const createMessageSlice: StateCreator<
 						: group
 				),
 			}));
+		} else{
+			set((state) => ({
+				recentPrivateMessages: {
+					...state.recentPrivateMessages,
+					[toId]: messageData,
+				},
+			}));
 		}
 
 		if (isGroup) {
@@ -82,6 +91,7 @@ export const createMessageSlice: StateCreator<
 		} else {
 			socket.emit("privateMessage", messageData);
 		}
+		set({ isSuccess: true });
 	},
 
 	editMessage: (messageId: string, newContent: string) => {
@@ -105,7 +115,7 @@ export const createMessageSlice: StateCreator<
 		}
 	},
 
-	reactToMessage: (messageId: string, reaction: string) => {
+	reactToMessage: (messageId: string,toId : string, reaction: string) => {
 		const { socket, messages, clientName, clientId } = get();
 
 		const messageToReact = messages.find((msg) => msg.id === messageId);
@@ -166,7 +176,8 @@ export const createMessageSlice: StateCreator<
 
 		if (socket && socket.connected) {
 			socket.emit("reactToMessage", { 
-				messageId, 
+				messageId,
+				toId,
 				reaction,
 				previousReaction: existingReaction 
 			});
@@ -217,7 +228,7 @@ export const createMessageSlice: StateCreator<
 			console.log("Fetched messages:", fetchedMessages.length);
 
 			if (fetchedMessages.length > 0) {
-				const timestamps = fetchedMessages.map((m) => m.timestamp);
+				const timestamps = fetchedMessages.map((m) => new Date(m.timestamp).getTime())
 				const oldestTimestamp = Math.min(...timestamps);
 
 				get().setOldestMessageTimestamp(target, oldestTimestamp);

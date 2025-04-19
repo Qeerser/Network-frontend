@@ -1,4 +1,3 @@
-
 import { StateCreator } from "zustand";
 import { v4 as uuidv4 } from "uuid";
 import { toast } from "@/hooks/use-toast";
@@ -13,25 +12,20 @@ export interface GroupSlice {
 	renameGroup: (targetGroup: Chat, newName: string) => void;
 }
 
-export const createGroupSlice: StateCreator<
-	ChatState,
-	[],
-	[],
-	GroupSlice
-> = (set, get, api) => ({
+export const createGroupSlice: StateCreator<ChatState, [], [], GroupSlice> = (set, get, api) => ({
 	availableGroups: [],
-	
+
 	createGroup: (name: string): Chat => {
 		const { socket, clientName, clientId, availableGroups } = get();
 		const groupId = uuidv4();
-		
+
 		get().setFetchedChats(`group-${groupId}`, true);
-		
+
 		if (availableGroups.some((group) => group.name === name)) {
 			console.warn(`Group ${name} already exists`);
 			return { id: "", name: "", type: null };
 		}
-		
+
 		const newGroup: ChatGroup = {
 			id: groupId,
 			name,
@@ -48,7 +42,7 @@ export const createGroupSlice: StateCreator<
 		if (socket && socket.connected) {
 			socket.emit("createGroup", newGroup);
 		}
-		
+
 		return { id: groupId, name, type: "group" };
 	},
 
@@ -80,8 +74,8 @@ export const createGroupSlice: StateCreator<
 
 	leaveGroup: (targetGroup: Chat) => {
 		const { socket, clientName, clientId, activeChat, availableGroups } = get();
-		
-		const group = availableGroups.find(g => g.id === targetGroup.id);
+
+		const group = availableGroups.find((g) => g.id === targetGroup.id);
 		if (group && (group.creator === clientName || group.creatorId === clientId)) {
 			toast({
 				title: "Cannot Leave Group",
@@ -141,7 +135,7 @@ export const createGroupSlice: StateCreator<
 			});
 		}
 	},
-	
+
 	renameGroup: (targetGroup: Chat, newName: string) => {
 		const { socket, clientName, clientId } = get();
 
@@ -154,7 +148,7 @@ export const createGroupSlice: StateCreator<
 			});
 			return;
 		}
-		
+
 		set((state) => ({
 			availableGroups: state.availableGroups.map((group) =>
 				group.id === targetGroup.id
@@ -164,9 +158,8 @@ export const createGroupSlice: StateCreator<
 					  }
 					: group
 			),
-			activeChat: state.activeChat.id === targetGroup.id 
-				? { ...state.activeChat, name: newName }
-				: state.activeChat
+			activeChat:
+				state.activeChat.id === targetGroup.id ? { ...state.activeChat, name: newName } : state.activeChat,
 		}));
 
 		if (socket && socket.connected) {
@@ -176,11 +169,11 @@ export const createGroupSlice: StateCreator<
 				clientId,
 			});
 		}
-		
+
 		toast({
 			title: "Group Renamed",
 			description: `Group renamed to "${newName}"`,
 			variant: "default",
 		});
-	}
+	},
 });

@@ -49,8 +49,11 @@ const ChatInterface: React.FC = () => {
 	const [showNewGroupDialog, setShowNewGroupDialog] = useState(false);
 	const [showRenameGroupDialog, setShowRenameGroupDialog] = useState(false);
 	const [renameGroupText, setRenameGroupText] = useState("");
-	
+
 	const messagesEndRef = useRef<HTMLDivElement>(null);
+	const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+	const [previousScrollHeight, setPreviousScrollHeight] = useState(0);
+	const [isSendingMessage, setIsSendingMessage] = useState(false);
 
 	useEffect(() => {
 		fetchRecentMessages(30);
@@ -66,20 +69,26 @@ const ChatInterface: React.FC = () => {
 		if (activeChat.id) {
 			if (!fetchedChats[`${activeChat.type}-${activeChat.id}`]) {
 				setFetchedChats(`${activeChat.type}-${activeChat.id}`, true);
-				
+
 				console.log(`Fetching messages for ${activeChat.type}:${activeChat.id}`);
-				fetchMessages(activeChat.id, activeChat.type, 15);
+				fetchMessages(activeChat.id, activeChat.type, 10);
 			}
 		}
 	}, [activeChat, fetchMessages, fetchedChats, setFetchedChats]);
 
 	useEffect(() => {
-		if (activeChat.id) {
-			setTimeout(() => {
-				messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-			}, 100);
+		console.log("isLoadingMessages changed:", isLoadingMessages);
+		if (!isLoadingMessages) {
+			const scrollContainer = scrollContainerRef.current;
+			if (scrollContainer && previousScrollHeight != 0 && previousScrollHeight !== scrollContainer.scrollHeight) {
+				requestAnimationFrame(() => {
+					const scrollDiff = scrollContainer.scrollHeight - previousScrollHeight;
+					scrollContainer.scrollTop = scrollDiff;
+				});
+			}
+			setPreviousScrollHeight(scrollContainerRef.current?.scrollHeight || 0);
 		}
-	}, [activeChat.id, messages.length]);
+	}, [isLoadingMessages]);
 
 	const filteredMessages = messages.filter((msg) => {
 		if (chatType === "private" && activeChat.id) {
@@ -96,22 +105,25 @@ const ChatInterface: React.FC = () => {
 	const sortedMessages = [...filteredMessages].sort((a, b) => a.timestamp - b.timestamp);
 
 	const recentPrivateChats = React.useMemo(() => {
-		const chatMap = new Map<string, {
-			id: string;
-			name: string;
-			type: "private";
-			lastMessage?: {
-				content: string;
-				timestamp: number;
-			};
-			lastMessageSender?: string;
-		}>();
-		
-		Object.values(recentPrivateMessages).forEach(msg => {
+		const chatMap = new Map<
+			string,
+			{
+				id: string;
+				name: string;
+				type: "private";
+				lastMessage?: {
+					content: string;
+					timestamp: number;
+				};
+				lastMessageSender?: string;
+			}
+		>();
+
+		Object.values(recentPrivateMessages).forEach((msg) => {
 			if (msg.isPrivate) {
 				let chatId;
 				let chatName;
-				
+
 				if (msg.fromId === clientId) {
 					chatId = msg.toId;
 					chatName = msg.to;
@@ -119,7 +131,7 @@ const ChatInterface: React.FC = () => {
 					chatId = msg.fromId;
 					chatName = msg.from;
 				}
-				
+
 				if (chatId && chatName) {
 					const existingChat = chatMap.get(chatId);
 					if (!existingChat || (existingChat.lastMessage?.timestamp ?? -Infinity) < msg.timestamp) {
@@ -129,15 +141,15 @@ const ChatInterface: React.FC = () => {
 							type: "private",
 							lastMessage: {
 								content: msg.content,
-								timestamp: msg.timestamp
+								timestamp: msg.timestamp,
 							},
-							lastMessageSender: msg.fromId === clientId ? 'You' : msg.from
+							lastMessageSender: msg.fromId === clientId ? "You" : msg.from,
 						});
 					}
 				}
 			}
 		});
-		
+
 		return Array.from(chatMap.values()).sort(
 			(a, b) => (b.lastMessage?.timestamp || 0) - (a.lastMessage?.timestamp || 0)
 		);
@@ -146,19 +158,17 @@ const ChatInterface: React.FC = () => {
 	const handleSendMessage = (content: string, image?: string) => {
 		if (!activeChat.id) return;
 
-		sendMessage(
-			content,
-			activeChat.name,
-			activeChat.type === "private",
-			activeChat.id,
-			image
-		);
+		sendMessage(content, activeChat.name, activeChat.type === "private", activeChat.id, image);
 
 		toast({
 			title: "Message Sent",
 			description: `To: ${activeChat.name}`,
-			duration: 2000,
+			duration: 1500,
 		});
+
+		setTimeout(() => {
+			messagesEndRef.current?.scrollIntoView();
+		}, 100);
 	};
 
 	const handleCreateGroup = (e: React.FormEvent) => {
@@ -166,7 +176,7 @@ const ChatInterface: React.FC = () => {
 
 		if (newGroupName.trim()) {
 			const newGroup = createGroup(newGroupName);
-			
+
 			setNewGroupName("");
 			setShowNewGroupDialog(false);
 			setChatType("group");
@@ -175,6 +185,7 @@ const ChatInterface: React.FC = () => {
 			toast({
 				title: "Group Created",
 				description: `"${newGroupName}" has been created`,
+
 				variant: "default",
 			});
 		}
@@ -195,52 +206,51 @@ const ChatInterface: React.FC = () => {
 		toast({
 			title: "Chat Cleared",
 			description: "All messages have been cleared",
+
 			variant: "default",
 		});
 	};
 
 	const handleScroll = (event: React.UIEvent<HTMLDivElement>) => {
 		const target = event.target as HTMLDivElement;
-		const scrollContainer = target.querySelector('[data-radix-scroll-area-viewport]');
-		
-		if (!scrollContainer || isLoadingMessages || !activeChat.id) return;
-		
-		if (scrollContainer.scrollTop < 20) {
+		let scrollContainer = target.querySelector("[data-radix-scroll-area-viewport]");
+		if (isLoadingMessages || !activeChat.id) return;
+		if (!scrollContainer) scrollContainer = target;
+
+		if (scrollContainer.scrollTop == 0) {
 			console.log("Scrolled to top, loading more messages");
 			const beforeTimestamp = oldestMessageTimestamp[activeChat.id];
-			
 			if (beforeTimestamp) {
-				fetchMessages(activeChat.id, activeChat.type, 10, beforeTimestamp);
+				fetchMessages(activeChat.id, activeChat.type, 5, beforeTimestamp);
 			} else {
-				fetchMessages(activeChat.id, activeChat.type, 10);
+				fetchMessages(activeChat.id, activeChat.type, 5);
 			}
 		}
 	};
 
-	const isCreatorOfActiveGroup = activeChat.type === "group" && 
-								  availableGroups.some(g => 
-									g.id === activeChat.id && 
-									(g.creator === clientName || g.creatorId === clientId));
+	const isCreatorOfActiveGroup =
+		activeChat.type === "group" &&
+		availableGroups.some((g) => g.id === activeChat.id && (g.creator === clientName || g.creatorId === clientId));
 
 	const handleGroupMemberClick = (member: Client) => {
 		setChatType("private");
-		
+
 		if (activeChat.id === member.id && activeChat.type === "private") {
 			clearActiveChat();
 			return;
 		}
-		
-		const clientMatch = [...connectedClients, ...offlineClients].find(client => client.id === member.id);
-		
+
+		const clientMatch = [...connectedClients, ...offlineClients].find((client) => client.id === member.id);
+
 		if (clientMatch) {
 			setActiveChat({
 				id: clientMatch.id,
 				name: clientMatch.name,
-				type: "private"
+				type: "private",
 			});
 		}
 	};
-	
+
 	const handleDeleteGroup = (group: Chat) => {
 		deleteGroup(group);
 		if (activeChat.id === group.id && activeChat.type === "group") {
@@ -249,30 +259,32 @@ const ChatInterface: React.FC = () => {
 		toast({
 			title: "Group deleted",
 			description: `"${group.name}" has been deleted`,
+
 			variant: "default",
 		});
 	};
 
-	const activeGroupMembers = activeChat.type === "group" 
-		? availableGroups.find(g => g.id === activeChat.id)?.members || []
-		: [];
+	const activeGroupMembers =
+		activeChat.type === "group" ? availableGroups.find((g) => g.id === activeChat.id)?.members || [] : [];
 
-	const activeGroupMemberObjects = activeChat.type === "group"
-		? [...connectedClients, ...offlineClients].filter(client => 
-				availableGroups.find(g => g.id === activeChat.id)?.memberIds?.includes(client.id) ||
-				availableGroups.find(g => g.id === activeChat.id)?.members?.includes(client.name)
-			)
-		: [];
+	const activeGroupMemberObjects =
+		activeChat.type === "group"
+			? [...connectedClients, ...offlineClients].filter(
+					(client) =>
+						availableGroups.find((g) => g.id === activeChat.id)?.memberIds?.includes(client.id) ||
+						availableGroups.find((g) => g.id === activeChat.id)?.members?.includes(client.name)
+			  )
+			: [];
 
 	const sortedconnectedClients = [...connectedClients].sort((a, b) => a.name.localeCompare(b.name));
 	const sortedOfflineClients = [...(offlineClients || [])].sort((a, b) => a.name.localeCompare(b.name));
 
-	const joinedGroups = availableGroups.filter(group => 
-		group.memberIds?.includes(clientId) || group.members?.includes(clientName)
+	const joinedGroups = availableGroups.filter(
+		(group) => group.memberIds?.includes(clientId) || group.members?.includes(clientName)
 	);
-	
-	const availableUnjoinedGroups = availableGroups.filter(group => 
-		!group.memberIds?.includes(clientId) && !group.members?.includes(clientName)
+
+	const availableUnjoinedGroups = availableGroups.filter(
+		(group) => !group.memberIds?.includes(clientId) && !group.members?.includes(clientName)
 	);
 
 	const sortedJoinedGroups = [...joinedGroups].sort((a, b) => {
@@ -284,13 +296,24 @@ const ChatInterface: React.FC = () => {
 		return a.name.localeCompare(b.name);
 	});
 
-	const sortedAvailableGroups = [...availableUnjoinedGroups].sort((a, b) => 
-		a.name.localeCompare(b.name)
-	);
+	const sortedAvailableGroups = [...availableUnjoinedGroups].sort((a, b) => a.name.localeCompare(b.name));
+
+	useEffect(() => {
+		if (activeChat.id) {
+			setTimeout(() => {
+				messagesEndRef.current?.scrollIntoView();
+			}, 100);
+		}
+	}, [activeChat.id]);
 
 	return (
 		<div className="flex flex-col h-full border rounded-md overflow-hidden">
-			<Tabs value={chatType} defaultValue="private" className="w-full h-full flex flex-col" onValueChange={handleTabChange}>
+			<Tabs
+				value={chatType}
+				defaultValue="private"
+				className="w-full h-full flex flex-col"
+				onValueChange={handleTabChange}
+			>
 				<div className="border-b">
 					<TabsList className="grid w-full grid-cols-2">
 						<TabsTrigger value="private" className="flex items-center gap-2">
@@ -310,7 +333,11 @@ const ChatInterface: React.FC = () => {
 							{chatType === "group" && (
 								<Dialog open={showNewGroupDialog} onOpenChange={setShowNewGroupDialog}>
 									<DialogTrigger asChild>
-										<Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-lime-600/10 transition-colors">
+										<Button
+											variant="ghost"
+											size="sm"
+											className="h-8 w-8 p-0 hover:bg-lime-600/10 transition-colors"
+										>
 											<PlusCircle size={16} />
 										</Button>
 									</DialogTrigger>
@@ -326,20 +353,27 @@ const ChatInterface: React.FC = () => {
 												className="my-4"
 											/>
 											<DialogFooter>
-												<Button type="submit" className="bg-lime-600 hover:bg-lime-700">Create Group</Button>
+												<Button type="submit" className="bg-lime-600 hover:bg-lime-700">
+													Create Group
+												</Button>
 											</DialogFooter>
 										</form>
 									</DialogContent>
 								</Dialog>
 							)}
 
-							<Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-lime-600/10 transition-colors" onClick={handleClearChat}>
+							<Button
+								variant="ghost"
+								size="sm"
+								className="h-8 w-8 p-0 hover:bg-lime-600/10 transition-colors"
+								onClick={handleClearChat}
+							>
 								<RefreshCw size={16} />
 							</Button>
 						</div>
 
 						{chatType === "private" ? (
-							<UsersPanel 
+							<UsersPanel
 								onlineUsers={sortedconnectedClients}
 								offlineUsers={sortedOfflineClients}
 								activeChat={activeChat}
@@ -351,7 +385,7 @@ const ChatInterface: React.FC = () => {
 										setActiveChat({
 											id: client.id,
 											name: client.name,
-											type: "private"
+											type: "private",
 										});
 									}
 								}}
@@ -368,7 +402,9 @@ const ChatInterface: React.FC = () => {
 							<ScrollArea className="flex-1">
 								{sortedJoinedGroups.length > 0 && (
 									<div className="mb-4">
-										<h4 className="text-xs font-medium text-muted-foreground mb-2 px-1">Joined Groups</h4>
+										<h4 className="text-xs font-medium text-muted-foreground mb-2 px-1">
+											Joined Groups
+										</h4>
 										<GroupsList
 											groups={sortedJoinedGroups}
 											activeChat={activeChat}
@@ -381,7 +417,7 @@ const ChatInterface: React.FC = () => {
 													setActiveChat({
 														id: group.id,
 														name: group.name,
-														type: "group"
+														type: "group",
 													});
 												}
 											}}
@@ -397,11 +433,13 @@ const ChatInterface: React.FC = () => {
 										/>
 									</div>
 								)}
-								
+
 								{sortedAvailableGroups.length > 0 && (
 									<div>
-										<h4 className="text-xs font-medium text-muted-foreground mb-2 px-1">Available Groups</h4>
-										<GroupsList 
+										<h4 className="text-xs font-medium text-muted-foreground mb-2 px-1">
+											Available Groups
+										</h4>
+										<GroupsList
 											groups={sortedAvailableGroups}
 											activeChat={activeChat}
 											clientName={clientName}
@@ -425,7 +463,7 @@ const ChatInterface: React.FC = () => {
 					</div>
 
 					<div className="flex-1 flex flex-col">
-						<ChatHeader 
+						<ChatHeader
 							activeChat={activeChat}
 							chatType={chatType}
 							groupMembers={activeGroupMembers}
@@ -450,13 +488,17 @@ const ChatInterface: React.FC = () => {
 
 						{activeChat.id && (
 							<>
-								<div className="flex-1 px-4 overflow-y-auto flex flex-col" onScroll={handleScroll}>
-									{isLoadingMessages && (
+								<div
+									className="flex-1 px-4 overflow-y-auto flex flex-col"
+									onScroll={handleScroll}
+									ref={scrollContainerRef}
+								>
+									{/* {isLoadingMessages && (
 										<div className="flex justify-center py-3">
 											<Loader className="h-5 w-5 animate-spin text-lime-500" />
 										</div>
-									)}
-									
+									)} */}
+
 									<div className="mt-auto">
 										<div className="flex flex-col space-y-1 pt-4">
 											{sortedMessages.length > 0 ? (
@@ -465,8 +507,10 @@ const ChatInterface: React.FC = () => {
 														key={msg.id}
 														message={msg}
 														isOwnMessage={msg.fromId === clientId}
-														isInGroup={activeChat.type === 'group'}
-														onEditMessage={msg.fromId === clientId ? editMessage : undefined}
+														isInGroup={activeChat.type === "group"}
+														onEditMessage={
+															msg.fromId === clientId ? editMessage : undefined
+														}
 														onReactMessage={reactToMessage}
 													/>
 												))
@@ -483,15 +527,12 @@ const ChatInterface: React.FC = () => {
 										</div>
 									</div>
 								</div>
-								
-								<div className="px-4 h-6 text-xs text-muted-foreground">
-									{/* This would show typing indicators */}
-								</div>
-								
-								<MessageInput 
-									activeChat={activeChat}
-									onSendMessage={handleSendMessage}
-								/>
+
+								{/* This would show typing indicators */}
+								{/* <div className="px-4 h-6 text-xs text-muted-foreground">
+								</div> */}
+
+								<MessageInput activeChat={activeChat} onSendMessage={handleSendMessage} />
 							</>
 						)}
 					</div>
@@ -511,7 +552,9 @@ const ChatInterface: React.FC = () => {
 							className="my-4"
 						/>
 						<DialogFooter>
-							<Button type="submit" className="bg-lime-600 hover:bg-lime-700">Save</Button>
+							<Button type="submit" className="bg-lime-600 hover:bg-lime-700">
+								Save
+							</Button>
 						</DialogFooter>
 					</form>
 				</DialogContent>

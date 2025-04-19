@@ -14,7 +14,7 @@ interface ChatMessageProps {
   isOwnMessage: boolean;
   isInGroup: boolean;
   onEditMessage?: (messageId: string, newContent: string) => void;
-  onReactMessage?: (messageId: string, reaction: string) => void;
+  onReactMessage?: (messageId: string, toId : string, reaction: string) => void;
   onRemoveReaction?: (messageId: string, reaction: string) => void;
 }
 
@@ -44,7 +44,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
 
   const handleReaction = (emoji: string) => {
     if (onReactMessage) {
-      onReactMessage(message.id, emoji);
+      onReactMessage(message.id,isOwnMessage || !message.isPrivate? message.toId : message.fromId, emoji);
       setShowEmojiPicker(false);
     }
   };

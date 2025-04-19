@@ -91,8 +91,9 @@ export interface ChatState {
   recentPrivateMessages: Record<string, ChatMessage>;
   recentMessagesTimestamp: number | null;
   sendMessage: (content: string, to: string, isPrivate: boolean, toId?: string, image?: string) => void;
+  isSuccess: boolean;
   editMessage: (messageId: string, newContent: string) => void;
-  reactToMessage: (messageId: string, reaction: string) => void;
+  reactToMessage: (messageId: string,toId : string, reaction: string) => void;
   clearChatMessages: () => void;
   isLoadingMessages: boolean;
   hasMoreMessages: boolean;
