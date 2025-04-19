@@ -33,6 +33,12 @@ const ChatClients: React.FC = () => {
     }
   };
 
+  useEffect(() => {
+    if (clientName) {
+      setNameInput(clientName);
+    }
+  }, [clientName]);
+  
   return (
     <div className="flex items-center justify-between">
       <div className="font-bold">

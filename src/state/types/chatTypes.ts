@@ -96,7 +96,7 @@ export interface ChatState {
   reactToMessage: (messageId: string,toId : string, reaction: string) => void;
   clearChatMessages: () => void;
   isLoadingMessages: boolean;
-  hasMoreMessages: boolean;
+  hasMoreMessages: Record<string, boolean>;
   oldestMessageTimestamp: Record<string, number>;
   setOldestMessageTimestamp: (chatId: string, timestamp: number) => void;
   fetchMessages: (target: string, type: "private" | "group", limit?: number, before?: number) => void;

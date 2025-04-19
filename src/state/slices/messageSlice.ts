@@ -14,7 +14,7 @@ export interface MessageSlice {
 	reactToMessage: (messageId: string,toId : string, reaction: string) => void;
 	clearChatMessages: () => void;
 	isLoadingMessages: boolean;
-	hasMoreMessages: boolean;
+	hasMoreMessages: Record<string, boolean>;
 	oldestMessageTimestamp: Record<string, number>;
 	setOldestMessageTimestamp: (chatId: string, timestamp: number) => void;
 	fetchMessages: (target: string, type: "private" | "group", limit?: number, before?: number) => void;
@@ -31,7 +31,7 @@ export const createMessageSlice: StateCreator<
 	recentPrivateMessages: {},
 	recentMessagesTimestamp: null,
 	isLoadingMessages: false,
-	hasMoreMessages: true,
+	hasMoreMessages: {},
 	oldestMessageTimestamp: {},
 	isSuccess: true,
 	
@@ -185,7 +185,11 @@ export const createMessageSlice: StateCreator<
 	},
 
 	clearChatMessages: () => {
-		set({ messages: [] });
+		set({ messages: [] ,
+			fetchedChats: {},
+			oldestMessageTimestamp: {},
+			hasMoreMessages: {}
+		});
 	},
 	
 	setOldestMessageTimestamp: (chatId: string, timestamp: number) => {
@@ -241,7 +245,10 @@ export const createMessageSlice: StateCreator<
 				return {
 					messages: [...uniqueNewMessages, ...state.messages],
 					isLoadingMessages: false,
-					hasMoreMessages: hasMore,
+					hasMoreMessages: {
+						...state.hasMoreMessages,
+						[target]: hasMore,
+					},
 				};
 			});
 		});

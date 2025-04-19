@@ -53,7 +53,6 @@ const ChatInterface: React.FC = () => {
 	const messagesEndRef = useRef<HTMLDivElement>(null);
 	const scrollContainerRef = useRef<HTMLDivElement | null>(null);
 	const [previousScrollHeight, setPreviousScrollHeight] = useState(0);
-	const [isSendingMessage, setIsSendingMessage] = useState(false);
 
 	useEffect(() => {
 		fetchRecentMessages(30);
@@ -217,7 +216,7 @@ const ChatInterface: React.FC = () => {
 		if (isLoadingMessages || !activeChat.id) return;
 		if (!scrollContainer) scrollContainer = target;
 
-		if (scrollContainer.scrollTop == 0) {
+		if (scrollContainer.scrollTop == 0 && hasMoreMessages[activeChat.id]) {
 			console.log("Scrolled to top, loading more messages");
 			const beforeTimestamp = oldestMessageTimestamp[activeChat.id];
 			if (beforeTimestamp) {
