@@ -21,7 +21,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 	const { isAuthenticated } = useAuthStore();
 
 	if (!isAuthenticated) {
-		return <Navigate to="/auth" replace />;
+		return <Navigate to="/login" replace />;
 	}
 
 	return <>{children}</>;
@@ -37,7 +37,7 @@ const App = () => {
 					<BrowserRouter>
 						<Routes>
 							{/* Auth route */}
-							<Route path="/auth" element={<Auth />} />
+							{/* <Route path="/auth" element={<Auth />} /> */}
 
 							{/* Protected routes */}
 							<Route
@@ -48,7 +48,7 @@ const App = () => {
 									</ProtectedRoute>
 								}
 							/>
-							<Route
+							{/* <Route
 								path="/about"
 								element={
 									<ProtectedRoute>
@@ -63,7 +63,7 @@ const App = () => {
 										<Contact />
 									</ProtectedRoute>
 								}
-							/>
+							/> */}
 							<Route path="/login" element={<Login />}></Route>
 							<Route path="/register" element={<Register />}></Route>
 
