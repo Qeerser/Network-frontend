@@ -5,6 +5,7 @@ axios.defaults.withCredentials = true;
 
 export const apiClient = axios.create({
 	baseURL: getConfig().apiUrl + "/",
+	withCredentials: true,
 });
 
 // // Request Interceptor

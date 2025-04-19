@@ -32,6 +32,7 @@ interface AuthState {
 	login: (credentials: LoginCredentials) => Promise<void>;
 	register: (credentials: RegisterCredentials) => Promise<void>;
 	logout: () => void;
+	uploadImage: (file: File) => Promise<string>;
 	clearError: () => void;
 }
 
@@ -120,6 +121,28 @@ export const useAuthStore = create<AuthState>()(
 					currentUser: null,
 					token: "",
 				});
+			},
+
+			uploadImage: async (file: File) => {
+				const formData = new FormData();
+				formData.append("image", file);
+
+				try {
+					const response = await apiClient.post("/auth/upload", formData, {
+						headers: {
+							"Content-Type": "multipart/form-data",
+						},
+					});
+
+					if (response.status === 200) {
+						return response.data.url;
+					} else {
+						throw new Error("Failed to upload image");
+					}
+				} catch (error) {
+					console.error("Error uploading image:", error);
+					throw error;
+				}
 			},
 
 			clearError: () => {

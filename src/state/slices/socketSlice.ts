@@ -245,6 +245,24 @@ export const createSocketSlice: StateCreator<
       // This will be handled by the clients/offlineClients updates
     });
 
+	socket.on("clientUpdated", (client: Client) => {
+		const { recentPrivateMessages } = get();
+		const prevMessage = recentPrivateMessages[client.id];
+		const isSender = prevMessage.fromId === client.id;
+		set({
+			recentPrivateMessages: {
+				...recentPrivateMessages,
+				[client.id]: {
+					...prevMessage,
+					...(isSender
+						? { from: client.name }
+						: { to: client.name}
+					)
+				}
+			}
+		});
+	});
+
 		socket.onAny((event, ...args) => {
 			console.log(`Received event: ${event}`, args);
 		});

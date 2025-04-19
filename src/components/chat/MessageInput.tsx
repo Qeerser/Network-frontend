@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Send, Image, Smile, X } from 'lucide-react';
 import EmojiPicker from '@/components/EmojiPicker';
+import { useAuthStore } from '@/state/authStore';
 
 interface MessageInputProps {
   activeChat: {
@@ -18,15 +19,21 @@ const MessageInput: React.FC<MessageInputProps> = ({ activeChat, onSendMessage }
   const [messageText, setMessageText] = useState("");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [imageAttachment, setImageAttachment] = useState<string | null>(null);
+  const [currentFile, setCurrentFile] = useState<File | null>(null);
   
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const { uploadImage } = useAuthStore();
 
-  const handleSendMessage = (e: React.FormEvent) => {
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if ((!messageText.trim() && !imageAttachment) || !activeChat.id) return;
 
-    onSendMessage(messageText, imageAttachment || undefined);
+    const res = await uploadImage(currentFile);
+    
+    setImageAttachment(res);
+    console.log("Image upload response:", imageAttachment);
+    onSendMessage(messageText, res);
     
     setMessageText("");
     setImageAttachment(null);
@@ -41,6 +48,7 @@ const MessageInput: React.FC<MessageInputProps> = ({ activeChat, onSendMessage }
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      setCurrentFile(file);
       const reader = new FileReader();
       reader.onload = (event) => {
         setImageAttachment(event.target?.result as string);
