@@ -13,5 +13,8 @@ export default defineConfig({
   },
   server: {
     port: 3001
-  }
+  },
+  preview: {
+    port: 5000,  // ตั้งพอร์ตสำหรับ preview หลัง build
+  },
 });
