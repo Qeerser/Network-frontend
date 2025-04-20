@@ -29,11 +29,14 @@ const MessageInput: React.FC<MessageInputProps> = ({ activeChat, onSendMessage }
 
     if ((!messageText.trim() && !imageAttachment) || !activeChat.id) return;
 
-    const res = await uploadImage(currentFile);
-    
-    setImageAttachment(res);
-    console.log("Image upload response:", imageAttachment);
-    onSendMessage(messageText, res);
+    if (currentFile) {
+      const res = await uploadImage(currentFile)
+      setImageAttachment(res);
+      console.log("Image upload response:", imageAttachment);
+      onSendMessage(messageText, res);
+    } else {
+      onSendMessage(messageText);
+    }
     
     setMessageText("");
     setImageAttachment(null);
