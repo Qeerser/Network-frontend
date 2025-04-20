@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Send, Image, Smile, X } from 'lucide-react';
 import EmojiPicker from '@/components/EmojiPicker';
 import { useAuthStore } from '@/state/authStore';
+import { set } from 'date-fns';
 
 interface MessageInputProps {
   activeChat: {
@@ -31,13 +32,12 @@ const MessageInput: React.FC<MessageInputProps> = ({ activeChat, onSendMessage }
 
     if (currentFile) {
       const res = await uploadImage(currentFile)
-      setImageAttachment(res);
-      console.log("Image upload response:", imageAttachment);
       onSendMessage(messageText, res);
     } else {
       onSendMessage(messageText);
     }
     
+    setCurrentFile(null);
     setMessageText("");
     setImageAttachment(null);
     setShowEmojiPicker(false);
