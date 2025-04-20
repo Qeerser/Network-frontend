@@ -112,7 +112,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
           </div>
         )}
       </div>
-      
+
       <div className={`flex max-w-[75%] flex-col ${isOwnMessage ? 'items-end' : 'items-start'}`}>
         {isInGroup && !isOwnMessage && (
           <div className="text-xs font-medium ml-2 mb-0.5 text-lime-600 dark:text-lime-400">
@@ -143,7 +143,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
               <div className="text-sm whitespace-pre-wrap">{message.content}</div>
               
               {message.image && (
-                <img src={message.image} alt="Message attachment" className="max-w-full rounded-md mt-2" />
+                <img src={message.image} alt="Message attachment" className="max-w-[150px]  rounded-md mt-2" />
               )}
               
               {message.edited && (
