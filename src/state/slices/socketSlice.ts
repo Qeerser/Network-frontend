@@ -232,6 +232,22 @@ export const createSocketSlice: StateCreator<
 				};
 			});
 		});
+
+		socket.on("messageEdited", ({ messageId, newContent }: { messageId: string; newContent: string }) => {
+			console.log("Message edited:", messageId, newContent);
+			set((state) => ({
+				messages: state.messages.map((message) =>
+					message.id === messageId
+						? {
+								...message,
+								content: newContent,
+								edited: true,
+								editedAt: Date.now(),
+						  }
+						: message
+				),
+			}));
+		});
     
     socket.on("userTyping", ({ userId, chatId, isTyping }: { userId: string; chatId: string; isTyping: boolean }) => {
       // Handle user typing indicator
