@@ -13,9 +13,9 @@ interface AppConfig {
 
 // Default configuration values
 const defaultConfig: AppConfig = {
-  baseUrl: "http://localhost:8080",
-  socketServerUrl: "http://localhost:5000",
-  apiUrl: "http://localhost:5000",
+  baseUrl: "",
+  socketServerUrl: "",
+  apiUrl: "/api",
   debug: true,
 };
 

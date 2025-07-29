@@ -37,8 +37,10 @@ interface AuthState {
 }
 
 interface AuthResponse {
-	user: User;
-	token: string;
+	success?: boolean;
+	user?: User;
+	token?: string;
+	message?: string;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -59,7 +61,7 @@ export const useAuthStore = create<AuthState>()(
 						password,
 					});
 
-					if (response.status === 200) {
+					if (response.status === 200 && response.data.user && response.data.token) {
 						const { user, token } = response.data;
 						set({
 							token,
@@ -69,13 +71,16 @@ export const useAuthStore = create<AuthState>()(
 						});
 					} else {
 						set({
-							error: "Invalid email or password",
+							error: response.data?.message || "Login failed",
 							isLoading: false,
 						});
 					}
-				} catch (err) {
+				} catch (err: unknown) {
+					// Handle error response from server
+					const error = err as { response?: { data?: { message?: string } } };
+					const errorMessage = error.response?.data?.message || "An error occurred during login";
 					set({
-						error: "An error occurred during login",
+						error: errorMessage,
 						isLoading: false,
 					});
 				}
@@ -91,25 +96,29 @@ export const useAuthStore = create<AuthState>()(
 						password,
 					});
 
-					if (response.status !== 200) {
+					// Check for success status codes (200 or 201)
+					if ((response.status === 200 || response.status === 201) && response.data.user && response.data.token) {
+						const { user, token } = response.data;
+
+						// Auto-login after successful registration
 						set({
-							error: "User with this email already exists",
+							token,
+							isAuthenticated: true,
+							currentUser: user,
 							isLoading: false,
 						});
-						return;
+					} else {
+						set({
+							error: response.data?.message || "Registration failed",
+							isLoading: false,
+						});
 					}
-					const { user, token } = response.data;
-
-					// Auto-login after successful registration
+				} catch (err: unknown) {
+					// Handle error response from server
+					const error = err as { response?: { data?: { message?: string } } };
+					const errorMessage = error.response?.data?.message || "An error occurred during registration";
 					set({
-						token,
-						isAuthenticated: true,
-						currentUser: user,
-						isLoading: false,
-					});
-				} catch (err) {
-					set({
-						error: "An error occurred during registration",
+						error: errorMessage,
 						isLoading: false,
 					});
 				}

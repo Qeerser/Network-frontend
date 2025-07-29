@@ -13,7 +13,10 @@ export interface SocketSlice {
 
 const getSocketServerUrl = () => {
 	const config = getConfig();
-	return config.socketServerUrl;
+	// Use current window origin if socketServerUrl is empty
+	const baseUrl = config.socketServerUrl || window.location.origin;
+	// Return base URL without path since we specify path separately
+	return baseUrl;
 };
 
 export const createSocketSlice: StateCreator<
@@ -33,10 +36,13 @@ export const createSocketSlice: StateCreator<
 		const userId = authState.currentUser?.id || "";
 
 		const socketServerUrl = getSocketServerUrl();
+		console.log("Socket.IO connecting to:", socketServerUrl, "with path: /api/socket.io/");
 
+		// Try connecting with explicit URL + path
 		const socket = io(socketServerUrl, {
 			autoConnect: true,
 			reconnection: true,
+			path: "/api/socket.io/",
 			auth: {
 				token: token,
 				userId: userId,
